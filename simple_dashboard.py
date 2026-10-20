@@ -9,7 +9,6 @@ from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from ultralytics import YOLO
 import cv2
 import uvicorn
 
@@ -39,8 +38,8 @@ static_assets = os.path.join(static_dir, "assets")
 if os.path.exists(static_assets):
     app.mount("/assets", StaticFiles(directory=static_assets), name="assets")
 
-# Load model
-model = YOLO("yolov8n.pt")
+model = None
+_video_thread = None
 _start_time = time.time()
 
 video_path = "test.mp4"
@@ -56,9 +55,21 @@ _video_active = False
 
 
 def process_video():
-    global latest_frame, _frame_count, _video_active
+    global latest_frame, _frame_count, _video_active, model
+    try:
+        from ultralytics import YOLO
+
+        model = YOLO("yolov8n.pt")
+    except ImportError:
+        # The dashboard API remains usable when the optional ML runtime is absent.
+        _video_active = False
+        return
+
     cap = cv2.VideoCapture(video_path)
     _video_active = cap.isOpened()
+    if not _video_active:
+        cap.release()
+        return
 
     while True:
         success, frame = cap.read()
@@ -114,7 +125,12 @@ def process_video():
         time.sleep(0.03)
 
 
-threading.Thread(target=process_video, daemon=True).start()
+@app.on_event("startup")
+def start_video_worker():
+    global _video_thread
+    if _video_thread is None or not _video_thread.is_alive():
+        _video_thread = threading.Thread(target=process_video, daemon=True)
+        _video_thread.start()
 
 
 def generate_stream():
