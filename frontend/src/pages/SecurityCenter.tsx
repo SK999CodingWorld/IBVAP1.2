@@ -1,27 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Shield, Lock, Activity, Users, AlertTriangle, CheckCircle, Network, Server, 
-  Key, Radio, Eye, FileText, CheckCircle2, ShieldAlert, Cpu, ArrowRight,
-  RefreshCw, Smartphone, Globe, HardDrive, KeyRound, Terminal, Zap, X,
-  UserX, ShieldCheck, Clock, Fingerprint, Layers, Check
+import { securityService } from '@/api';
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  Fingerprint,
+  Globe,HardDrive,
+  Key,
+  KeyRound,
+  Lock,
+  Network,
+  RefreshCw,
+  Server,
+  Shield,
+  Smartphone,
+  Terminal,
+  Users,
+  UserX,
+  X
 } from 'lucide-react';
-import { ApiKeySection } from '../components/security/ApiKeySection';
+import { useEffect,useState } from 'react';
 import { IntegrationsSection } from '../components/security/IntegrationsSection';
 
 interface SecurityCenterProps {
-  initialTab?: 'overview' | 'api-keys' | 'integrations' | 'authentication' | 'encryption' | 'network';
+  initialTab?: 'overview' | 'integrations' | 'authentication' | 'encryption' | 'network';
 }
 
 export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'api-keys' | 'integrations' | 'authentication' | 'encryption' | 'network'>(initialTab);
-  
+  const [activeTab, setActiveTab] = useState<'overview' | 'integrations' | 'authentication' | 'encryption' | 'network'>(initialTab);
+
   // Live Telemetry States
   const [overview, setOverview] = useState({
     authEvents24h: 142,
     failedLogins24h: 5,
     activeSessions: 3,
     encryptionStatus: 'healthy',
-    activeApiKeys: 3,
     activeIntegrations: 6,
     kmsKeyId: 'kms-root-sec4-20260901',
     kmsLastRotated: '2026-09-01T00:00:00Z'
@@ -29,7 +41,6 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
 
   const [authEvents, setAuthEvents] = useState<any[]>([]);
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
-  const [encryptionData, setEncryptionData] = useState<any>(null);
   const [isRotatingKms, setIsRotatingKms] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
 
@@ -40,7 +51,7 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
 
   const fetchOverview = async () => {
     try {
-      const res = await fetch('/api/security/overview');
+      const res = await securityService.getOverview();
       if (res.ok) {
         const data = await res.json();
         setOverview(prev => ({ ...prev, ...data }));
@@ -52,7 +63,7 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
 
   const fetchSessions = async () => {
     try {
-      const res = await fetch('/api/security/active-sessions');
+      const res = await securityService.getActiveSessions();
       if (res.ok) {
         const data = await res.json();
         setActiveSessions(data);
@@ -64,7 +75,7 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
 
   const fetchAuthEvents = async () => {
     try {
-      const res = await fetch('/api/security/auth-events');
+      const res = await securityService.getAuthEvents();
       if (res.ok) {
         const data = await res.json();
         setAuthEvents(data);
@@ -76,10 +87,15 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
 
   const fetchEncryption = async () => {
     try {
-      const res = await fetch('/api/security/encryption-status');
+      const res = await securityService.getEncryptionStatus();
       if (res.ok) {
         const data = await res.json();
-        setEncryptionData(data);
+        setOverview(current => ({
+          ...current,
+          encryptionStatus: data.status ?? current.encryptionStatus,
+          kmsKeyId: data.key_id ?? current.kmsKeyId,
+          kmsLastRotated: data.timestamp ?? current.kmsLastRotated,
+        }));
       }
     } catch (e) {
       console.warn('Encryption fallback:', e);
@@ -96,7 +112,7 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
   const handleTerminateSession = async (sessionId: string, userName: string) => {
     if (!confirm(`Are you sure you want to terminate the active session for ${userName}?`)) return;
     try {
-      const res = await fetch(`/api/security/active-sessions/${sessionId}`, { method: 'DELETE' });
+      const res = await securityService.terminateSession(sessionId);
       if (res.ok) {
         setActiveSessions(prev => prev.filter(s => s.id !== sessionId));
         showToast(`Session for ${userName} terminated successfully`, 'success');
@@ -112,7 +128,7 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
   const handleRotateKms = async () => {
     setIsRotatingKms(true);
     try {
-      const res = await fetch('/api/security/kms/rotate', { method: 'POST' });
+      const res = await securityService.rotateKms();
       if (res.ok) {
         const data = await res.json();
         setOverview(prev => ({
@@ -133,7 +149,7 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
 
   return (
     <div className="p-4 md:p-6 h-full flex flex-col bg-[#070B12] text-slate-200 overflow-y-auto space-y-5 custom-scrollbar relative">
-      
+
       {/* Toast Notification */}
       {toast && (
         <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl border text-white shadow-2xl font-mono text-xs animate-in slide-in-from-bottom-5 ${
@@ -170,9 +186,9 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
 
         {/* Right Radar / Satellite Visual Banner */}
         <div className="relative h-14 w-full md:w-80 rounded-lg overflow-hidden border border-slate-800/70 bg-[#060A10] flex items-center">
-          <img 
-            src="/security-header-bg.jpg" 
-            alt="Security Banner" 
+          <img
+            src="/bg-analytics.jpg"
+            alt="Security Banner"
             className="w-full h-full object-cover opacity-70"
             onError={(e) => {
               (e.target as HTMLElement).style.display = 'none';
@@ -190,7 +206,6 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
       <div className="flex gap-2 border-b border-slate-800/80 pb-1 overflow-x-auto">
         {[
           { id: 'overview', label: 'Overview', icon: Shield },
-          { id: 'api-keys', label: 'API Keys & Sandbox', icon: Key },
           { id: 'integrations', label: 'Integrations & Webhooks', icon: Network, badge: `${overview.activeIntegrations} Active` },
           { id: 'authentication', label: 'Authentication & Sessions', icon: Users },
           { id: 'encryption', label: 'Encryption & KMS', icon: Lock },
@@ -316,9 +331,9 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
 
             {/* Visual Flow Container */}
             <div className="relative rounded-xl p-6 md:p-8 bg-[#060910] border border-slate-800/90 overflow-hidden min-h-[220px] flex items-center justify-center">
-              <img 
-                src="/security-arch-bg.jpg" 
-                alt="Architecture Grid" 
+              <img
+                src="/bg-surveillance.jpg"
+                alt="Architecture Grid"
                 className="absolute inset-0 w-full h-full object-cover opacity-25 pointer-events-none"
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
@@ -328,7 +343,7 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
 
               {/* 3 Pipeline Stages */}
               <div className="relative z-10 w-full max-w-4xl flex flex-col md:flex-row items-center justify-between gap-4 md:gap-2">
-                
+
                 {/* Stage 1: Edge Cameras & Drones */}
                 <div className="flex flex-col items-center text-center w-full md:w-56 p-4 rounded-xl bg-[#0C121D]/90 border border-cyan-500/30 shadow-lg">
                   <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center text-cyan-400 mb-3 shadow-inner">
@@ -427,17 +442,12 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
         </div>
       )}
 
-      {/* ── TAB 2: API KEYS & SANDBOX ── */}
-      {activeTab === 'api-keys' && (
-        <ApiKeySection />
-      )}
-
-      {/* ── TAB 3: INTEGRATIONS & WEBHOOKS ── */}
+      {/* ── TAB 2: INTEGRATIONS & WEBHOOKS ── */}
       {activeTab === 'integrations' && (
         <IntegrationsSection />
       )}
 
-      {/* ── TAB 4: AUTHENTICATION & ACTIVE SESSIONS ── */}
+      {/* ── TAB 3: AUTHENTICATION & ACTIVE SESSIONS ── */}
       {activeTab === 'authentication' && (
         <div className="space-y-5">
           {/* Active Operator Sessions Table */}
@@ -451,7 +461,7 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
                   Real-time logged-in military personnel with terminal endpoints and clearance levels
                 </p>
               </div>
-              <button 
+              <button
                 onClick={fetchSessions}
                 className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs flex items-center gap-1 border border-slate-700 cursor-pointer"
               >
@@ -575,7 +585,7 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
         </div>
       )}
 
-      {/* ── TAB 5: ENCRYPTION & KMS ── */}
+      {/* ── TAB 4: ENCRYPTION & KMS ── */}
       {activeTab === 'encryption' && (
         <div className="space-y-5">
           {/* Master Hardware KMS Module Card */}
@@ -664,7 +674,7 @@ export function SecurityCenter({ initialTab = 'overview' }: SecurityCenterProps)
         </div>
       )}
 
-      {/* ── TAB 6: NETWORK & VLANS ── */}
+      {/* ── TAB 5: NETWORK & VLANS ── */}
       {activeTab === 'network' && (
         <div className="bg-[#0B111B] border border-slate-800/90 rounded-xl p-5 space-y-4">
           <div className="flex justify-between items-center pb-3 border-b border-slate-800/80">

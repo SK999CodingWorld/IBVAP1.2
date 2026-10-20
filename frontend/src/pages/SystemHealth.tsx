@@ -1,30 +1,34 @@
-import { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { 
-  Server, Cpu, Database, Network, HardDrive, 
-  Activity, ArrowDownToLine, Signal, SignalZero, WifiOff, RefreshCw,
-  AlertTriangle, ShieldCheck, Zap, CheckCircle2, AlertCircle, ArrowUpRight
+import {
+  Activity,
+  AlertTriangle,
+  Cpu,Database,
+  HardDrive,
+  Network,
+  RefreshCw,
+  Server,
+  Zap
 } from 'lucide-react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const CircularProgress = ({ value, colorClass, size = 68, strokeWidth = 7 }: { value: number, colorClass: string, size?: number, strokeWidth?: number }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (value / 100) * circumference;
-  
+
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="transform -rotate-90">
-        <circle 
-          cx={size / 2} cy={size / 2} r={radius} 
-          stroke="currentColor" strokeWidth={strokeWidth} 
-          fill="transparent" className="text-slate-800/80" 
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          stroke="currentColor" strokeWidth={strokeWidth}
+          fill="transparent" className="text-slate-800/80"
         />
-        <circle 
-          cx={size / 2} cy={size / 2} r={radius} 
-          stroke="currentColor" strokeWidth={strokeWidth} 
-          fill="transparent" strokeDasharray={circumference} strokeDashoffset={offset} 
-          className={`transition-all duration-1000 ease-in-out ${colorClass}`} 
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          stroke="currentColor" strokeWidth={strokeWidth}
+          fill="transparent" strokeDasharray={circumference} strokeDashoffset={offset}
+          className={`transition-all duration-1000 ease-in-out ${colorClass}`}
           strokeLinecap="round"
         />
       </svg>
@@ -48,11 +52,11 @@ export const SystemHealth = () => {
   const updateNodeStatus = (id: string, status: string) => {
     setEdgeNodes(nodes => nodes.map(n => {
       if (n.id === id) {
-        return { 
-          ...n, 
-          status, 
+        return {
+          ...n,
+          status,
           latency: status === 'online' ? '18ms' : status === 'degraded' ? '145ms' : '---',
-          pending: status === 'online' ? 0 : status === 'offline' ? n.pending + 50 : n.pending + 10 
+          pending: status === 'online' ? 0 : status === 'offline' ? n.pending + 50 : n.pending + 10
         };
       }
       return n;
@@ -66,11 +70,10 @@ export const SystemHealth = () => {
   const onlineCount = edgeNodes.filter(n => n.status === 'online').length;
   const offlineCount = edgeNodes.filter(n => n.status === 'offline').length;
   const degradedCount = edgeNodes.filter(n => n.status === 'degraded').length;
-  const isDegraded = offlineCount > 0 || degradedCount > 0;
 
   return (
     <div className="p-4 md:p-6 space-y-5 h-full overflow-y-auto bg-[#070B12] text-slate-200">
-      
+
       {/* Top Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0A0F18]/90 border border-slate-800/80 p-4 rounded-xl shadow-lg backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -82,7 +85,7 @@ export const SystemHealth = () => {
             <p className="text-slate-400 text-xs">System performance, edge node status, and real-time infrastructure monitoring</p>
           </div>
         </div>
-        
+
         {/* System Health Degraded Alert Box */}
         <div className="px-4 py-2.5 rounded-lg border border-red-500/40 bg-red-950/30 flex items-center gap-3 shadow-inner">
           <div className="w-7 h-7 rounded-md bg-red-500/20 flex items-center justify-center text-red-400">
@@ -185,7 +188,7 @@ export const SystemHealth = () => {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> 6 Operational
             </span>
           </div>
-          
+
           <div className="overflow-x-auto mt-2">
             <table className="w-full text-xs text-left">
               <thead className="text-[11px] text-slate-400 uppercase tracking-wider border-b border-slate-800/60">
@@ -217,8 +220,8 @@ export const SystemHealth = () => {
                     <td className="py-2.5 px-3 text-slate-400 font-mono">{s.latency}</td>
                     <td className="py-2.5 px-3">
                       <div className="w-20 bg-slate-800/80 rounded-full h-1.5 overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full ${s.health > 90 ? 'bg-emerald-400' : 'bg-amber-400'}`} 
+                        <div
+                          className={`h-full rounded-full ${s.health > 90 ? 'bg-emerald-400' : 'bg-amber-400'}`}
                           style={{ width: `${s.health}%` }}
                         />
                       </div>
@@ -296,8 +299,8 @@ export const SystemHealth = () => {
 
           <div className="grid grid-cols-2 gap-2.5 mt-3">
             {edgeNodes.map(node => (
-              <div 
-                key={node.id} 
+              <div
+                key={node.id}
                 className={`p-2.5 rounded-lg border transition-all ${
                   node.status === 'online' ? 'bg-[#080E18] border-slate-800 hover:border-emerald-500/40' :
                   node.status === 'degraded' ? 'bg-amber-950/20 border-amber-500/40' :
@@ -314,7 +317,7 @@ export const SystemHealth = () => {
                     {node.status}
                   </span>
                 </div>
-                
+
                 <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
                   <span>Latency: <span className="text-slate-200 font-mono">{node.latency}</span></span>
                   {node.pending > 0 && (
@@ -324,21 +327,21 @@ export const SystemHealth = () => {
 
                 <div className="mt-2 flex items-center justify-between gap-1 pt-1.5 border-t border-slate-800/60">
                   <div className="flex gap-1">
-                    <button 
+                    <button
                       onClick={() => updateNodeStatus(node.id, 'online')}
                       title="Set Online"
                       className={`text-[9px] px-1.5 py-0.5 rounded ${node.status === 'online' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
                     >
                       ON
                     </button>
-                    <button 
+                    <button
                       onClick={() => updateNodeStatus(node.id, 'degraded')}
                       title="Set Degraded"
                       className={`text-[9px] px-1.5 py-0.5 rounded ${node.status === 'degraded' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
                     >
                       DEG
                     </button>
-                    <button 
+                    <button
                       onClick={() => updateNodeStatus(node.id, 'offline')}
                       title="Set Offline"
                       className={`text-[9px] px-1.5 py-0.5 rounded ${node.status === 'offline' ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
@@ -347,7 +350,7 @@ export const SystemHealth = () => {
                     </button>
                   </div>
                   {node.pending > 0 && (
-                    <button 
+                    <button
                       onClick={() => syncNode(node.id)}
                       className="text-[9px] bg-cyan-600/30 hover:bg-cyan-600 text-cyan-300 hover:text-white px-1.5 py-0.5 rounded flex items-center gap-0.5"
                     >
@@ -376,14 +379,20 @@ export const SystemHealth = () => {
             </div>
           </div>
 
-          {/* Chart View with Crop Background or Graphic */}
-          <div className="relative mt-3 rounded-lg overflow-hidden border border-slate-800/60 bg-[#070B12] h-40 flex items-center justify-center">
-            <img 
-              src="/health-bandwidth-crop.jpg" 
-              alt="Bandwidth Chart" 
-              className="w-full h-full object-cover opacity-85 hover:opacity-100 transition-opacity" 
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0B111B]/80 via-transparent to-transparent pointer-events-none" />
+          {/* Native vector chart keeps labels and telemetry crisp at every size. */}
+          <div className="relative mt-3 rounded-lg overflow-hidden border border-slate-800/60 bg-[#070B12] h-40 p-3">
+            <svg className="w-full h-full" viewBox="0 0 560 120" preserveAspectRatio="none" role="img" aria-label="Bandwidth usage trend">
+              <defs>
+                <linearGradient id="download-fill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#22D3EE" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#22D3EE" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {[20, 50, 80, 110].map((y) => <line key={y} x1="0" x2="560" y1={y} y2={y} stroke="#1E293B" strokeDasharray="3 6" />)}
+              <path d="M0 78 C35 71 40 46 78 52 S119 75 158 60 S197 26 236 39 S278 67 317 50 S358 29 397 40 S439 72 479 53 S522 24 560 32 L560 120 L0 120 Z" fill="url(#download-fill)" />
+              <path d="M0 78 C35 71 40 46 78 52 S119 75 158 60 S197 26 236 39 S278 67 317 50 S358 29 397 40 S439 72 479 53 S522 24 560 32" fill="none" stroke="#22D3EE" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
+              <path d="M0 96 C36 88 48 100 83 88 S120 91 157 83 S195 95 236 81 S279 93 317 78 S360 92 399 77 S441 88 480 74 S523 90 560 68" fill="none" stroke="#A78BFA" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+            </svg>
           </div>
 
           <div className="mt-3 grid grid-cols-3 gap-2 pt-2 border-t border-slate-800/60 text-center">
@@ -408,7 +417,7 @@ export const SystemHealth = () => {
             <h2 className="text-sm font-bold text-white flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-400" /> System Alerts
             </h2>
-            <button className="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold">View All</button>
+            <Link to="/alerts" className="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold">View All</Link>
           </div>
 
           <div className="space-y-2.5 mt-3">

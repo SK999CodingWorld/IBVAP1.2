@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
-import { 
-  FileText, Search, Filter, Download, User, Activity, AlertCircle, 
-  CheckCircle2, ShieldAlert, ShieldCheck, Lock, Terminal, Clock, 
-  Eye, X, ArrowUpRight, Check, Hash
+import {
+  Activity,AlertCircle,
+  CheckCircle2,
+  Clock,
+  Download,
+  Eye,
+  FileText,
+  Lock,
+  Search,
+  ShieldCheck,
+  Terminal,
+  X
 } from 'lucide-react';
+import { useState } from 'react';
 
 interface AuditItem {
   id: string;
@@ -22,7 +30,7 @@ const mockLogs: AuditItem[] = Array.from({ length: 24 }, (_, i) => {
   const users = ['admin', 'commander01', 'operator01', 'auditor01', 'analyst01'];
   const resources = ['System Core', 'Camera: BOP-01', 'Evidence: EVD-17598', 'Zone: Sector-04-Red', 'AI Model: ByteTrack', 'ANPR DB'];
   const results: ('Success' | 'Failure')[] = i === 4 || i === 11 || i === 19 ? ['Failure'] : ['Success'];
-  
+
   const action = actions[i % actions.length];
   const user = users[i % users.length];
   const resource = resources[i % resources.length];
@@ -90,7 +98,7 @@ export function AuditLog() {
 
   return (
     <div className="p-4 md:p-6 h-full flex flex-col bg-[#070B12] text-slate-200 overflow-y-auto space-y-5">
-      
+
       {/* Top Header Card */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0A0F18]/90 border border-slate-800/80 p-4 rounded-xl shadow-lg backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -111,7 +119,7 @@ export function AuditLog() {
             <span>CHAIN INTEGRITY: VERIFIED</span>
           </div>
 
-          <button 
+          <button
             onClick={handleExportAuditTrail}
             className="bg-[#0B111B] hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors border border-slate-700 shadow-sm cursor-pointer"
           >
@@ -194,14 +202,14 @@ export function AuditLog() {
 
       {/* Main Table Container */}
       <div className="bg-[#0B111B] border border-slate-800/90 rounded-xl overflow-hidden shadow-sm flex-1 flex flex-col">
-        
+
         {/* Filter Toolbar */}
         <div className="p-3.5 border-b border-slate-800/80 flex flex-wrap gap-2.5 bg-[#080E18] items-center justify-between">
           <div className="relative flex-1 min-w-[240px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <input 
-              type="text" 
-              placeholder="Search audit logs by ID, user, action, or resource..." 
+            <input
+              type="text"
+              placeholder="Search audit logs by ID, user, action, or resource..."
               className="w-full pl-9 pr-4 py-1.5 bg-[#070B12] border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-cyan-500 text-slate-200 placeholder-slate-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -209,7 +217,7 @@ export function AuditLog() {
           </div>
 
           <div className="flex items-center gap-2">
-            <select 
+            <select
               value={userFilter}
               onChange={(e) => setUserFilter(e.target.value)}
               className="bg-[#070B12] border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500"
@@ -222,7 +230,7 @@ export function AuditLog() {
               <option value="analyst01">analyst01</option>
             </select>
 
-            <select 
+            <select
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
               className="bg-[#070B12] border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500"
@@ -259,7 +267,7 @@ export function AuditLog() {
             </thead>
             <tbody className="divide-y divide-slate-800/50">
               {filteredLogs.map((log) => (
-                <tr 
+                <tr
                   key={log.id}
                   className="hover:bg-slate-800/30 transition-colors cursor-pointer"
                   onClick={() => setSelectedLog(log)}
@@ -296,7 +304,7 @@ export function AuditLog() {
                   </td>
                   <td className="py-2.5 px-4 text-slate-400 font-mono text-[11px]">{log.ip}</td>
                   <td className="py-2.5 px-4 text-right">
-                    <button 
+                    <button
                       onClick={(e) => { e.stopPropagation(); setSelectedLog(log); }}
                       className="text-cyan-400 hover:text-cyan-300 p-1 hover:bg-slate-800 rounded"
                     >
@@ -365,7 +373,7 @@ export function AuditLog() {
             </div>
 
             <div className="pt-3 border-t border-slate-800 flex justify-end">
-              <button 
+              <button
                 onClick={() => setSelectedLog(null)}
                 className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded text-xs font-semibold"
               >

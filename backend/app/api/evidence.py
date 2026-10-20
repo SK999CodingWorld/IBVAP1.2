@@ -4,7 +4,7 @@ from fastapi.responses import FileResponse
 from typing import List, Optional, Dict, Any
 from app.ai.evidence_vault import evidence_vault
 
-router = APIRouter(prefix="/api/evidence", tags=["evidence"])
+router = APIRouter(prefix="/evidence", tags=["evidence"])
 
 @router.get("")
 @router.get("/")
@@ -43,11 +43,11 @@ async def get_evidence_snapshot(filename: str):
     safe_name = os.path.basename(filename)
     vault_dir = os.path.abspath(evidence_vault.storage_dir)
     filepath = os.path.abspath(os.path.join(vault_dir, safe_name))
-    
+
     # Path traversal guard
     if not filepath.startswith(vault_dir):
         raise HTTPException(status_code=400, detail="Invalid filename")
-        
+
     if not os.path.exists(filepath):
         # Fallback to demo snapshot if exact file not found
         for f in os.listdir(vault_dir):
@@ -64,11 +64,11 @@ async def get_case_manifest(case_id: str):
     if not cases:
         raise HTTPException(status_code=404, detail="Case not found")
     case = cases[0]
-    
+
     # Generate cryptographic hash of record contents
     raw_bytes = f"{case.get('id')}:{case.get('case_number')}:{case.get('timestamp')}:{case.get('confidence')}:{case.get('severity')}".encode('utf-8')
     sha256_hash = hashlib.sha256(raw_bytes).hexdigest()
-    
+
     manifest = {
         "chain_of_custody": "VERIFIED_TAMPER_EVIDENT",
         "evidence_record": case,

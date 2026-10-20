@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 from app.api.auth import get_current_user
 import uuid
 
-router = APIRouter(prefix="/api/notifications", tags=["notifications"])
+router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 # Mock notifications
 MOCK_NOTIFICATIONS = [

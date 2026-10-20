@@ -1,6 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { streamService } from '@/api';
+import { getAuthenticatedMediaUrl } from '@/api/client';
 import { Button } from '@/components/ui/Button';
-import { Shield, RefreshCw, Trash2, CheckCircle2, Crosshair, AlertCircle, X } from 'lucide-react';
+import { AlertCircle,CheckCircle2,Crosshair,RefreshCw,Shield,Trash2,X } from 'lucide-react';
+import React,{ useEffect,useRef,useState } from 'react';
 
 interface Point {
   x: number;
@@ -19,7 +21,7 @@ export const ZoneSetupModal: React.FC<ZoneSetupModalProps> = ({
   onZoneUpdated
 }) => {
   const [points, setPoints] = useState<Point[]>([]);
-  const [snapshotUrl, setSnapshotUrl] = useState<string>('/api/stream/snapshot');
+  const [snapshotUrl, setSnapshotUrl] = useState<string>(getAuthenticatedMediaUrl('/api/v1/stream/snapshot'));
   const [saving, setSaving] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -29,12 +31,12 @@ export const ZoneSetupModal: React.FC<ZoneSetupModalProps> = ({
   // Fetch current zone coordinates & snapshot on open
   useEffect(() => {
     if (isOpen) {
-      setSnapshotUrl(`/api/stream/snapshot?t=${Date.now()}`);
+      setSnapshotUrl(getAuthenticatedMediaUrl(`/api/v1/stream/snapshot?t=${Date.now()}`));
       setSaveSuccess(false);
       setErrorMessage(null);
 
       // Fetch existing zone from backend
-      fetch('/api/stream/zone')
+      streamService.getZone()
         .then(res => res.json())
         .then(data => {
           if (data && Array.isArray(data.polygon) && data.polygon.length >= 3) {
@@ -75,7 +77,7 @@ export const ZoneSetupModal: React.FC<ZoneSetupModalProps> = ({
   };
 
   const handleRefreshSnapshot = () => {
-    setSnapshotUrl(`/api/stream/snapshot?t=${Date.now()}`);
+    setSnapshotUrl(getAuthenticatedMediaUrl(`/api/v1/stream/snapshot?t=${Date.now()}`));
   };
 
   const handleSaveZone = async () => {
@@ -92,11 +94,7 @@ export const ZoneSetupModal: React.FC<ZoneSetupModalProps> = ({
         polygon: points.map(p => [p.x, p.y])
       };
 
-      const res = await fetch('/api/stream/zone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      const res = await streamService.updateZone(payload.polygon);
 
       if (res.ok) {
         setSaveSuccess(true);
@@ -122,7 +120,7 @@ export const ZoneSetupModal: React.FC<ZoneSetupModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        
+
         {/* Header */}
         <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/60">
           <div>
@@ -138,7 +136,7 @@ export const ZoneSetupModal: React.FC<ZoneSetupModalProps> = ({
             <span className="px-2.5 py-1 bg-amber-500/10 text-amber-400 font-mono text-xs font-bold rounded border border-amber-500/20">
               {points.length}/4 Points Selected
             </span>
-            <button 
+            <button
               onClick={onClose}
               className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
             >
@@ -149,18 +147,21 @@ export const ZoneSetupModal: React.FC<ZoneSetupModalProps> = ({
 
         {/* Content Body */}
         <div className="p-5 overflow-y-auto space-y-4">
-          
+
           {/* Interactive Snapshot Canvas */}
-          <div 
+          <div
             className="relative bg-black rounded-xl overflow-hidden border border-slate-700 cursor-crosshair select-none shadow-2xl group"
             onClick={handleImageClick}
           >
             {/* Base Snapshot Image */}
-            <img 
+            <img
               ref={imageRef}
-              src={snapshotUrl} 
+              src={snapshotUrl}
               alt="Camera Calibration Snapshot"
               className="w-full h-auto aspect-video object-cover pointer-events-none"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/camera-perimeter.jpg';
+              }}
               onLoad={(e) => {
                 const img = e.currentTarget;
                 if (img.naturalWidth && img.naturalHeight) {
@@ -170,35 +171,35 @@ export const ZoneSetupModal: React.FC<ZoneSetupModalProps> = ({
             />
 
             {/* SVG Polygon & Lines Overlay */}
-            <svg 
+            <svg
               className="absolute inset-0 w-full h-full pointer-events-none"
-              viewBox="0 0 100 100" 
+              viewBox="0 0 100 100"
               preserveAspectRatio="none"
             >
               {points.length >= 3 && (
-                <polygon 
-                  points={svgPoints} 
-                  fill="rgba(234, 179, 8, 0.28)" 
-                  stroke="#eab308" 
-                  strokeWidth="0.6" 
-                  strokeDasharray="2,1" 
+                <polygon
+                  points={svgPoints}
+                  fill="rgba(234, 179, 8, 0.28)"
+                  stroke="#eab308"
+                  strokeWidth="0.6"
+                  strokeDasharray="2,1"
                 />
               )}
               {points.length === 2 && (
-                <line 
-                  x1={(points[0].x / imageDims.width) * 100} 
-                  y1={(points[0].y / imageDims.height) * 100} 
-                  x2={(points[1].x / imageDims.width) * 100} 
-                  y2={(points[1].y / imageDims.height) * 100} 
-                  stroke="#eab308" 
-                  strokeWidth="0.6" 
+                <line
+                  x1={(points[0].x / imageDims.width) * 100}
+                  y1={(points[0].y / imageDims.height) * 100}
+                  x2={(points[1].x / imageDims.width) * 100}
+                  y2={(points[1].y / imageDims.height) * 100}
+                  stroke="#eab308"
+                  strokeWidth="0.6"
                 />
               )}
             </svg>
 
             {/* Render Point Nodes */}
             {points.map((p, idx) => (
-              <div 
+              <div
                 key={idx}
                 className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center"
                 style={{
@@ -215,7 +216,7 @@ export const ZoneSetupModal: React.FC<ZoneSetupModalProps> = ({
             {/* Helper overlay when points are needed */}
             {points.length < 4 && (
               <div className="absolute top-3 left-3 bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-lg border border-amber-500/40 text-amber-300 text-xs font-mono flex items-center gap-2">
-                <Crosshair size={14} className="animate-spin" /> 
+                <Crosshair size={14} className="animate-spin" />
                 {points.length === 0 && "Click Top-Left (Point 1)"}
                 {points.length === 1 && "Click Top-Right (Point 2)"}
                 {points.length === 2 && "Click Bottom-Right (Point 3)"}
@@ -237,17 +238,17 @@ export const ZoneSetupModal: React.FC<ZoneSetupModalProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <Button 
-                size="sm" 
-                variant="ghost" 
+              <Button
+                size="sm"
+                variant="ghost"
                 onClick={handleRefreshSnapshot}
                 className="text-slate-400 hover:text-white text-xs h-7 gap-1"
               >
                 <RefreshCw size={12} /> Refresh Frame
               </Button>
-              <Button 
-                size="sm" 
-                variant="ghost" 
+              <Button
+                size="sm"
+                variant="ghost"
                 onClick={handleReset}
                 className="text-red-400 hover:text-red-300 text-xs h-7 gap-1"
               >
@@ -277,8 +278,8 @@ export const ZoneSetupModal: React.FC<ZoneSetupModalProps> = ({
           <Button variant="ghost" onClick={onClose} className="text-slate-400 text-xs">
             Cancel
           </Button>
-          <Button 
-            onClick={handleSaveZone} 
+          <Button
+            onClick={handleSaveZone}
             disabled={points.length < 3 || saving}
             className="bg-amber-600 hover:bg-amber-500 text-black font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-amber-950/40"
           >

@@ -1,202 +1,79 @@
-# IBVAP Deployment Guide
+# Production deployment preparation
 
-## Quick Deploy Options
+## Hosting boundary
 
-### Option 1: Railway (Easiest - Full Stack)
+Supabase hosts the managed PostgreSQL database used by this application. The existing backend is a Python/FastAPI service with SQLAlchemy, WebSockets, streaming endpoints, and optional camera/AI workers. Supabase Edge Functions run TypeScript/Deno and are not a drop-in host for this runtime. Deploy the API container to a long-running container service and point Vercel at its HTTPS API URL. Do not put the Supabase database password or service role key in Vercel/browser variables.
 
-1. **Push to GitHub:**
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-git remote add origin https://github.com/yourusername/ibvap.git
-git push -u origin main
-```
+The Vite frontend is configured for Vercel in `frontend/vercel.json`. Deep links are rewritten to `index.html`; browser requests to the backend use `VITE_API_BASE_URL`.
 
-2. **Deploy on Railway:**
-   - Go to [railway.app](https://railway.app)
-   - Click "New Project" → "Deploy from GitHub repo"
-   - Select your repo
-   - Railway auto-detects `railway.json` and `Dockerfile.prod`
-   - Click Deploy
+## 1. Create the Supabase database
 
-3. **Get your URL:** Railway gives you `https://your-app.railway.app`
+1. Create a Supabase project and save its database password securely.
+2. From **Connect**, copy the **Transaction pooler** connection string for the API service. It uses port `6543`; the SQLAlchemy client disables asyncpg's prepared statement cache for this pooler.
+3. Apply the initial schema with the Supabase CLI from the repository root:
 
----
+   ```sh
+   supabase login
+   supabase link --project-ref YOUR_PROJECT_REF
+   supabase db push
+   ```
 
-### Option 2: Render (Free Tier)
+   The initial migration creates the SQLAlchemy tables and enables Row Level Security without policies. This intentionally denies direct `anon` and `authenticated` Data API access; the app uses its FastAPI API and a server-side database connection. Keep application data access behind that API.
+4. Save the transaction pooler URL as `DATABASE_URL` in the API host and set `DB_SSL=true`.
 
-1. **Create `render.yaml`:**
-```yaml
-services:
-  - type: web
-    name: ibvap
-    env: docker
-    dockerfilePath: Dockerfile.prod
-    plan: free
-    healthCheckPath: /
-    envVars:
-      - key: PYTHONUNBUFFERED
-        value: "1"
-```
+The production API does not run `metadata.create_all()` at startup. Apply migrations before deploying a new API version. Review future SQL migrations before applying them to production.
 
-2. **Deploy:**
-   - Go to [render.com](https://render.com)
-   - New → Web Service → Connect GitHub
-   - Select repo, Render reads `render.yaml`
+## 2. Deploy the FastAPI API container
 
----
+Build from the repository root with `Dockerfile.prod` and deploy it to a container host that supports long-lived HTTP/WebSocket connections. Configure these environment variables in that host's secret/settings UI:
 
-### Option 3: Fly.io (Docker-native)
+| Name | Production value |
+| --- | --- |
+| `ENVIRONMENT` | `production` |
+| `DATABASE_URL` | Supabase transaction pooler URL (secret) |
+| `DB_SSL` | `true` |
+| `SECRET_KEY` | Unique random secret, at least 32 characters |
+| `WEBHOOK_SECRET` | Separate unique random secret, at least 32 characters |
+| `DEMO_MODE` | `false` |
+| `ENABLE_BACKGROUND_WORKERS` | `false` on the web API instance |
+| `CORS_ORIGINS` | JSON array of exact Vercel HTTPS origins, e.g. `["https://your-app.vercel.app"]` |
+| `ENABLE_KEY_HEALTH_CHECK` | `false` unless restricted diagnostics are explicitly needed |
+| `REDIS_URL` | Shared Redis URL if using distributed caching/rate limiting |
 
-```bash
-# Install flyctl
-curl -L https://fly.io/install.sh | sh
+Production startup fails if demo mode, wildcard/non-HTTPS CORS, insecure database transport, default secrets, or in-process workers are enabled. Camera ingestion and AI processing should run as separate worker services with their own network and compute access. The bundled model/streaming worker must not be assumed to run on Vercel or Supabase Edge Functions.
 
-# Login and deploy
-fly auth login
-fly launch --dockerfile Dockerfile.prod
-fly deploy
-```
+Use `/health` as a liveness check and `/api/v1/health` as the database readiness check. Configure the API host to allow the Vercel origin in `CORS_ORIGINS` before switching traffic.
 
----
+## 3. Connect GitHub to Vercel
 
-### Option 4: Frontend on Vercel + Backend on Railway
+1. Push the reviewed repository to GitHub.
+2. Import it into Vercel and set **Root Directory** to `frontend`.
+3. Use `npm ci` for install, `npm run build` for build, and `dist` as output.
+4. Set these Vercel environment variables for Preview and Production:
 
-#### Frontend (Vercel):
-1. **Create `vercel.json` in dashboard/:**
-```json
-{
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://your-railway-url.railway.app/api/$1" },
-    { "source": "/video_feed", "destination": "https://your-railway-url.railway.app/video_feed" },
-    { "source": "/alerts", "destination": "https://your-railway-url.railway.app/alerts" }
-  ]
-}
-```
+   ```text
+   VITE_API_BASE_URL=https://YOUR_API_HOST/api/v1
+   VITE_API_TIMEOUT_MS=20000
+   VITE_DEMO_MODE=false
+   ```
 
-2. **Deploy:**
-   - Go to [vercel.com](https://vercel.com)
-   - Import GitHub repo → Select `dashboard` folder
-   - Deploy
+   `VITE_*` variables are public and compiled into the browser bundle. Never put database URLs, JWT signing secrets, Supabase service-role keys, or webhook secrets in them.
+5. Add the Vercel production domain and any intended preview domains to the API's `CORS_ORIGINS`. Use exact HTTPS origins; don't use `*`.
+6. Confirm both the Vercel production URL and direct API URL, including `/api/v1/health`, before enabling automatic production deploys.
 
-#### Backend (Railway):
-- Same as Option 1, but update `vite.config.ts` proxy to your Railway URL
+Vercel's GitHub integration handles frontend preview and production builds. `.github/workflows/ci-cd.yml` validates backend tests and the Vercel frontend build; it does not publish secrets or trigger a separate provider deployment.
 
----
+## 4. Verify before release
 
-### Option 5: DigitalOcean App Platform
+- Apply the Supabase migration to a clean staging project and verify all 14 expected tables exist.
+- Run `python -m pytest backend/tests tests -v` with a disposable test database.
+- Run `npm ci && npm run build` from `frontend/`.
+- Test authentication, expired/invalid tokens, role-protected endpoints, camera/stream access, incident actions, evidence operations, API validation errors, and WebSocket reconnects against staging.
+- Confirm request logs carry request IDs and never contain passwords, token values, database URLs, or uploaded evidence contents.
+- Redact the `token` query parameter in API host, proxy, and observability logs. Native browser media elements cannot attach bearer headers, so the live MJPEG/snapshot URLs use the session token as a query parameter; keep access logs disabled or redact that parameter at every layer.
+- Confirm demo seeding, demo login bypasses, and generated telemetry are disabled in production.
+- Rotate all example/development credentials before connecting real data.
 
-1. **Create `.do/app.yaml`:**
-```yaml
-name: ibvap
-services:
-- name: api
-  source_dir: /
-  github:
-    repo: yourusername/ibvap
-    branch: main
-  run_command: python simple_dashboard.py
-  environment_slug: python
-  instance_count: 1
-  instance_size_slug: basic-xxs
-  http_port: 8000
-  routes:
-  - path: /
-  health_check:
-    http_path: /
-  envs:
-  - key: PYTHONUNBUFFERED
-    value: "1"
-```
+## Local development
 
----
-
-### Option 6: Hugging Face Spaces (Best for ML Demos)
-
-1. **Create Space:**
-   - Go to [huggingface.co/new-space](https://huggingface.co/new-space)
-   - Select "Docker" as SDK
-   - Public or Private
-
-2. **Add `Dockerfile` (use `Dockerfile.prod`)**
-
-3. **Push:**
-```bash
-git remote add space https://huggingface.co/spaces/yourusername/ibvap
-git push space main
-```
-
----
-
-## Pre-deployment Checklist
-
-### 1. Build Frontend First
-```bash
-cd dashboard
-npm install
-npm run build
-# This creates dashboard/dist/ which Docker copies to static/
-```
-
-### 2. Test Docker Build Locally
-```bash
-docker build -f Dockerfile.prod -t ibvap .
-docker run -p 8000:8000 ibvap
-# Test at http://localhost:8000
-```
-
-### 3. Required Files for Deploy
-- [x] `Dockerfile.prod` - Production Dockerfile
-- [x] `railway.json` - Railway config
-- [x] `.dockerignore` - Optimize build
-- [x] `simple_dashboard.py` - Serves React + API
-- [x] `requirements.txt` - Python deps
-- [x] `dashboard/dist/` - Built React app (run `npm run build`)
-
-### 4. Environment Variables (Set in Platform)
-```env
-PYTHONUNBUFFERED=1
-# Optional: for external services
-# REDIS_HOST=...
-# POSTGRES_HOST=...
-```
-
----
-
-## Platform Comparison
-
-| Platform | Free Tier | Docker | GPU | Best For |
-|----------|-----------|--------|-----|----------|
-| Railway | $5 credit/mo | ✅ | ❌ | Easiest full-stack |
-| Render | 750 hrs/mo | ✅ | ❌ | Simple web services |
-| Fly.io | 3 shared CPUs | ✅ | ✅ (paid) | Docker-native |
-| Vercel | Unlimited | ❌ | ❌ | Frontend only |
-| Hugging Face | Free CPU | ✅ | ❌ | ML demos |
-| DigitalOcean | $5/mo | ✅ | ✅ | Production |
-
----
-
-## Recommended: Railway (Easiest)
-
-1. Push to GitHub
-2. Go to railway.app → New Project → GitHub
-3. Select repo → Deploy
-4. Get `https://your-app.railway.app`
-4. Share with friends!
-
----
-
-## Post-Deploy
-
-1. **Test endpoints:**
-   - `https://your-app.railway.app/` - React Dashboard
-   - `https://your-app.railway.app/simple` - Simple Dashboard
-   - `https://your-app.railway.app/video_feed` - MJPEG Stream
-   - `https://your-app.railway.app/alerts` - Alerts API
-   - `https://your-app.railway.app/app` - React App (if built)
-
-2. **Share the link with friends!** 🎉
+Copy `.env.example` to `.env`, install Python dependencies, and run `python run.py`. For the UI, copy `frontend/.env.example` to `frontend/.env.local`, run `npm ci`, then `npm run dev`. Vite proxies API and WebSocket traffic to `VITE_DEV_API_TARGET` (default `http://127.0.0.1:8001`).

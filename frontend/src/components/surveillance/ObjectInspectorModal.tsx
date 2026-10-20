@@ -1,11 +1,15 @@
-import React from 'react';
-import { useVideoStore, BoundingBox } from '@/stores/videoStore';
-import { 
-  X, Shield, User, Car, AlertTriangle, Activity, 
-  MapPin, Compass, Gauge, Clock, ChevronRight, FileText, CheckCircle2,
-  Sparkles, Layers
-} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useVideoStore } from '@/stores/videoStore';
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Compass,Gauge,
+  MapPin,
+  X
+} from 'lucide-react';
+import React from 'react';
 
 export const ObjectInspectorModal: React.FC = () => {
   const { inspectedObject, inspectObject, inspectingCameraId } = useVideoStore();
@@ -28,15 +32,22 @@ export const ObjectInspectorModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-        
+
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/90 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
-              {isPerson && <User size={20} />}
-              {isVehicle && <Car size={20} />}
-              {isAnimal && <Shield size={20} />}
-              {!isPerson && !isVehicle && !isAnimal && <Layers size={20} />}
+            <div className="relative w-12 h-12 rounded-xl border border-cyan-500/40 overflow-hidden bg-black/60 flex-shrink-0 shadow-md">
+              <img
+                src={
+                  isPerson ? '/camera-pedestrian.jpg' :
+                  isVehicle ? '/camera-vehicle.jpg' :
+                  isAnimal ? '/camera-wildlife.jpg' :
+                  '/camera-pedestrian.jpg'
+                }
+                alt={obj.type}
+                className="w-full h-full object-cover"
+                onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -54,7 +65,7 @@ export const ObjectInspectorModal: React.FC = () => {
             </div>
           </div>
 
-          <button 
+          <button
             onClick={() => inspectObject(null)}
             className="p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
           >
@@ -64,7 +75,7 @@ export const ObjectInspectorModal: React.FC = () => {
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-5 text-xs">
-          
+
           {/* ANIMAL FILTER BANNER */}
           {isAnimal && obj.animalAttrs && (
             <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex items-start gap-3">

@@ -46,24 +46,22 @@ metrics_tracker = MetricsTracker()
 class ObservabilityMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         request_id = request.headers.get("X-Request-ID", uuid.uuid4().hex)
+        request.state.request_id = request_id
         start_time = time.perf_counter()
-        
-        try:
-            response = await call_next(request)
-        except Exception:
-            raise
+
+        response = await call_next(request)
 
         process_time_ms = (time.perf_counter() - start_time) * 1000.0
         metrics_tracker.record(process_time_ms)
-        
+
         response.headers["X-Request-ID"] = request_id
         response.headers["X-Process-Time"] = f"{process_time_ms:.2f}ms"
-        
+
         if process_time_ms > 200.0 and not request.url.path.startswith(("/video_feed", "/stream")):
             logger.warning(
                 f"[SLOW REQUEST] {request.method} {request.url.path} took {process_time_ms:.2f}ms (ID: {request_id})"
             )
-            
+
         return response
 
 class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
@@ -90,26 +88,27 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Bypass rate limit during automated pytest execution or explicit load benchmark
         if request.headers.get("host", "").startswith("test") or request.headers.get("x-benchmark") == "1" or request.client is None:
             return await call_next(request)
-            
+
         ip = request.client.host if request.client else "127.0.0.1"
         now = time.time()
-        
+
         # Determine threshold
-        limit = 30 if request.url.path == "/api/auth/login" else settings.RATE_LIMIT_PER_MINUTE
+        login_paths = {"/api/auth/login", "/api/v1/auth/login"}
+        limit = 30 if request.url.path in login_paths else settings.RATE_LIMIT_PER_MINUTE
         window = 60.0
-        
+
         timestamps = self.request_records.get(ip, [])
         # Expire older timestamps
         timestamps = [t for t in timestamps if now - t < window]
-        
+
         if len(timestamps) >= limit:
             return JSONResponse(
                 status_code=429,
                 content={"detail": "Too many requests. Please slow down."},
                 headers={"Retry-After": "60"}
             )
-            
+
         timestamps.append(now)
         self.request_records[ip] = timestamps
-        
+
         return await call_next(request)

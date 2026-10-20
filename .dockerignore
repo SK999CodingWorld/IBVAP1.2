@@ -41,14 +41,6 @@ logs/
 test.mp4
 *.mp4
 
-# Dashboard source (built separately)
-dashboard/src
-dashboard/node_modules
-dashboard/public
-dashboard/*.config.*
-dashboard/tsconfig.json
-dashboard/package*.json
-
 # Deployment
 .dockerignore
 docker-compose*.yml

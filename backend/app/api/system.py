@@ -3,7 +3,7 @@ from typing import Dict, Any, List
 from app.api.auth import get_current_user
 import random
 
-router = APIRouter(prefix="/api/system", tags=["system"])
+router = APIRouter(prefix="/system", tags=["system"])
 
 @router.get("/health")
 async def get_system_health(current_user=Depends(get_current_user)):

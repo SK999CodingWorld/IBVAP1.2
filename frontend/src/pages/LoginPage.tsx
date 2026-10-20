@@ -1,7 +1,7 @@
+import { useAuthStore } from '@/stores/authStore';
+import { AlertCircle,ArrowRight,Cpu,Loader2,Lock,Shield,User,Video } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/stores/authStore';
-import { Shield, Lock, User, Cpu, Video, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 
 export const LoginPage = () => {
   const [username, setUsername] = useState('admin');
@@ -27,88 +27,36 @@ export const LoginPage = () => {
   };
 
   return (
-    <div 
-      className="min-h-screen w-full bg-[#060A10] flex items-center justify-center p-4 relative overflow-hidden font-sans"
+    <div
+      className="min-h-[100svh] w-full bg-[#060A10] flex items-center justify-center p-4 py-6 relative overflow-x-hidden overflow-y-auto font-sans"
       style={{
-        backgroundImage: "url('/login-bg.jpg')",
+        backgroundImage: "url('/bg-operations.jpg')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}
     >
-      {/* Explicit background image tag for maximum browser compatibility */}
-      <img 
-        src="/login-bg.jpg" 
-        alt="IBVAP Border Security" 
-        className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none z-0 select-none" 
+      {/* Image layer adds a separate dark overlay above the photo. */}
+      <img
+        src="/bg-operations.jpg"
+        alt="IBVAP Border Security"
+        className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none z-0 select-none"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
       />
-      
+
       {/* Subtle Dark Radial Falloff to seamlessly frame the center card */}
       <div className="absolute inset-0 bg-black/20 pointer-events-none z-[1]" />
 
       {/* ── CENTRAL GLASSMORPHIC LOGIN CARD (MATCHING REFERENCE IMAGE 1:1) ── */}
       <div className="w-full max-w-[440px] rounded-[28px] border border-cyan-400/40 bg-[#0B1528]/85 backdrop-blur-xl p-7 shadow-[0_0_50px_-8px_rgba(6,182,212,0.35)] relative overflow-hidden z-10 space-y-4">
-        
+
         {/* Subtle Cyan Corner Flare Reflections */}
         <div className="absolute -top-12 -left-12 w-28 h-28 bg-cyan-400/15 rounded-full blur-2xl pointer-events-none" />
         <div className="absolute -bottom-12 -right-12 w-28 h-28 bg-cyan-400/15 rounded-full blur-2xl pointer-events-none" />
 
         {/* ── CARD HEADER: EMBLEM & WORDMARK ── */}
-        <div className="text-center space-y-2">
-          {/* Cyan Shield Badge with Dual Chevrons & Central Triangle Eye */}
-          <div className="flex justify-center">
-            <div className="relative inline-flex items-center justify-center p-1">
-              <svg className="w-12 h-14 drop-shadow-[0_0_12px_rgba(6,182,212,0.65)]" viewBox="0 0 60 70" fill="none">
-                {/* Shield Outer Outline */}
-                <path 
-                  d="M30 4 L54 14 V38 C54 52 30 66 30 66 C30 66 6 52 6 38 V14 Z" 
-                  stroke="#22D3EE" 
-                  strokeWidth="2.5" 
-                  fill="rgba(6, 182, 212, 0.12)" 
-                />
-                {/* Inner Chevrons */}
-                <path 
-                  d="M22 46 L30 52 L38 46" 
-                  stroke="#22D3EE" 
-                  strokeWidth="2.5" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                />
-                <path 
-                  d="M24 38 L30 43 L36 38" 
-                  stroke="#22D3EE" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                />
-                {/* Central Triangle Eye with Glowing Beacon */}
-                <polygon 
-                  points="30,19 38,32 22,32" 
-                  stroke="#22D3EE" 
-                  strokeWidth="1.6" 
-                  fill="rgba(6, 182, 212, 0.25)" 
-                />
-                <circle cx="30" cy="27" r="2.5" fill="#34D399" className="animate-pulse" />
-              </svg>
-            </div>
-          </div>
-
-          {/* IBVAP Bold Typography */}
-          <h1 className="text-3xl font-extrabold tracking-[0.2em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-            IBVAP
-          </h1>
-
-          {/* Subtitle */}
-          <p className="text-xs text-slate-300 font-medium tracking-wide">
-            Intelligent Border Video Analytics Platform
-          </p>
-
-          {/* Indian Tricolor Mini Divider Bar */}
-          <div className="flex items-center justify-center gap-0.5 w-12 h-1 mx-auto pt-1 rounded-full overflow-hidden">
-            <span className="w-4 h-full bg-[#FF9933] rounded-l-full shadow-sm" />
-            <span className="w-4 h-full bg-white shadow-sm" />
-            <span className="w-4 h-full bg-[#138808] rounded-r-full shadow-sm" />
-          </div>
+        <div className="w-full max-w-[340px] aspect-[3.04] mx-auto overflow-hidden">
+          <img src="/ibvap-logo.png" alt="IBVAP — Border Video Intelligence" className="block w-full h-full object-cover" />
         </div>
 
         {/* ── INNER PANEL: SECURE COMMAND ACCESS ── */}

@@ -1,16 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/Card';
+import { zoneService } from '@/api';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Card,CardContent,CardFooter,CardHeader,CardTitle } from '@/components/ui/Card';
 import { Switch } from '@/components/ui/Switch';
-import { 
-  Map, AlertTriangle, Clock, Plus, Trash2, Edit2, ShieldAlert, 
-  Eye, CheckCircle2, Sliders, Layers, Compass, Crosshair, 
-  Activity, Shield, ArrowUpRight, Zap, X, Check, Undo, RotateCcw,
-  Camera, Sparkles, AlertCircle
-} from 'lucide-react';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  Check,
+  CheckCircle2,
+  Clock,
+  Compass,
+  Edit2,
+  Eye,
+  Map,
+  Plus,
+  RotateCcw,
+  Shield,
+  ShieldAlert,
+  Trash2,
+  Undo,
+  X
+} from 'lucide-react';
+import React,{ useEffect,useRef,useState } from 'react';
 
 interface FenceZone {
   id: string;
@@ -28,55 +40,55 @@ interface FenceZone {
 }
 
 const MOCK_ZONES: FenceZone[] = [
-  { 
-    id: '1', 
-    name: 'Restricted Zone Alpha', 
-    camera: 'CAM-01 (Sector 4 North)', 
-    type: 'Polygon', 
-    status: 'active', 
-    severity: 'critical', 
-    schedule: '24/7 Monitored', 
+  {
+    id: '1',
+    name: 'Restricted Zone Alpha',
+    camera: 'CAM-01 (Sector 4 North)',
+    type: 'Polygon',
+    status: 'active',
+    severity: 'critical',
+    schedule: '24/7 Monitored',
     violations: 12,
     threatLevel: 88,
-    previewImg: '/fence-feed-alpha.jpg',
+    previewImg: '/camera-perimeter.jpg',
     color: '#EF4444',
     coordinates: [[60, 40], [280, 40], [280, 180], [60, 180]]
   },
-  { 
-    id: '2', 
-    name: 'Perimeter Fence East', 
-    camera: 'CAM-04 (Sector 2 East)', 
-    type: 'Line Crossing', 
-    status: 'active', 
-    severity: 'high', 
-    schedule: '22:00 - 05:00 Night Guard', 
+  {
+    id: '2',
+    name: 'Perimeter Fence East',
+    camera: 'CAM-04 (Sector 2 East)',
+    type: 'Line Crossing',
+    status: 'active',
+    severity: 'high',
+    schedule: '22:00 - 05:00 Night Guard',
     violations: 3,
     threatLevel: 45,
-    previewImg: '/fence-feed-east.jpg',
+    previewImg: '/bg-surveillance.jpg',
     color: '#F59E0B',
     coordinates: [[20, 110], [320, 110]]
   },
-  { 
-    id: '3', 
-    name: 'Checkpoint Entry Line', 
-    camera: 'CAM-05 (Highway Gate)', 
-    type: 'Line Crossing', 
-    status: 'inactive', 
-    severity: 'medium', 
-    schedule: '24/7 Monitored', 
+  {
+    id: '3',
+    name: 'Checkpoint Entry Line',
+    camera: 'CAM-05 (Highway Gate)',
+    type: 'Line Crossing',
+    status: 'inactive',
+    severity: 'medium',
+    schedule: '24/7 Monitored',
     violations: 0,
     threatLevel: 15,
-    previewImg: '/fence-feed-check.jpg',
+    previewImg: '/camera-checkpoint.jpg',
     color: '#3B82F6',
     coordinates: [[40, 120], [300, 120]]
   }
 ];
 
 const AVAILABLE_CAMERAS = [
-  { id: 'cam1', name: 'CAM-01 (Sector 4 North)', preview: '/fence-feed-alpha.jpg' },
-  { id: 'cam2', name: 'CAM-02 (BOP Wagah Sector)', preview: '/feed-bop02.jpg' },
-  { id: 'cam4', name: 'CAM-04 (Sector 2 East)', preview: '/fence-feed-east.jpg' },
-  { id: 'cam5', name: 'CAM-05 (Highway Gate)', preview: '/fence-feed-check.jpg' },
+  { id: 'cam1', name: 'CAM-01 (Sector 4 North)', preview: '/camera-perimeter.jpg' },
+  { id: 'cam2', name: 'CAM-02 (BOP Wagah Sector)', preview: '/camera-checkpoint.jpg' },
+  { id: 'cam4', name: 'CAM-04 (Sector 2 East)', preview: '/bg-surveillance.jpg' },
+  { id: 'cam5', name: 'CAM-05 (Highway Gate)', preview: '/camera-checkpoint.jpg' },
 ];
 
 export const VirtualFences = () => {
@@ -91,7 +103,7 @@ export const VirtualFences = () => {
   const [formCamera, setFormCamera] = useState('CAM-01 (Sector 4 North)');
   const [formType, setFormType] = useState<'Polygon' | 'Line Crossing' | 'Rectangle'>('Polygon');
   const [formSeverity, setFormSeverity] = useState<'critical' | 'high' | 'medium' | 'low'>('critical');
-  const [formSchedule, setFormSchedule] = useState('24/7 Monitored');
+  const formSchedule = '24/7 Monitored';
   const [drawingPoints, setDrawingPoints] = useState<[number, number][]>([]);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [fenceNotification, setFenceNotification] = useState<string | null>(null);
@@ -103,14 +115,12 @@ export const VirtualFences = () => {
 
   // Canvas Ref
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstance = useRef<L.Map | null>(null);
 
   // Fetch Zones from Backend API on Mount
   useEffect(() => {
     const fetchBackendZones = async () => {
       try {
-        const res = await fetch('/api/zones');
+        const res = await zoneService.list();
         if (res.ok) {
           const json = await res.json();
           if (json.data && Array.isArray(json.data) && json.data.length > 0) {
@@ -120,8 +130,8 @@ export const VirtualFences = () => {
               return {
                 id: item.id || `zone_${idx + 1}`,
                 name: cfg.name || `Zone ${idx + 1}`,
-                camera: cfg.camera_id === 'cam1' ? 'CAM-01 (Sector 4 North)' : 
-                        cfg.camera_id === 'cam2' ? 'CAM-02 (BOP Wagah)' : 
+                camera: cfg.camera_id === 'cam1' ? 'CAM-01 (Sector 4 North)' :
+                        cfg.camera_id === 'cam2' ? 'CAM-02 (BOP Wagah)' :
                         cfg.camera_id === 'cam4' ? 'CAM-04 (Sector 2 East)' : 'CAM-05 (Highway Gate)',
                 type: isPoly ? 'Polygon' : 'Line Crossing',
                 status: cfg.enabled ? 'active' : 'inactive',
@@ -129,7 +139,7 @@ export const VirtualFences = () => {
                 schedule: '24/7 Monitored',
                 violations: idx === 0 ? 12 : idx === 1 ? 3 : 0,
                 threatLevel: idx === 0 ? 88 : idx === 1 ? 45 : 15,
-                previewImg: idx === 0 ? '/fence-feed-alpha.jpg' : idx === 1 ? '/fence-feed-east.jpg' : '/fence-feed-check.jpg',
+                previewImg: idx === 0 ? '/camera-perimeter.jpg' : idx === 1 ? '/bg-surveillance.jpg' : '/camera-checkpoint.jpg',
                 color: idx === 0 ? '#EF4444' : idx === 1 ? '#F59E0B' : '#3B82F6',
                 coordinates: cfg.coordinates
               };
@@ -214,7 +224,7 @@ export const VirtualFences = () => {
   const toggleZone = async (id: string) => {
     setZones(prev => prev.map(z => z.id === id ? { ...z, status: z.status === 'active' ? 'inactive' : 'active' } : z));
     try {
-      await fetch(`/api/zones/${id}/toggle`, { method: 'POST' });
+      await zoneService.toggle(id);
     } catch (e) {
       console.warn('Backend toggle offline, updated local state');
     }
@@ -225,7 +235,7 @@ export const VirtualFences = () => {
     if (confirm(`Revoke and delete virtual fence "${name}"?`)) {
       setZones(prev => prev.filter(z => z.id !== id));
       try {
-        await fetch(`/api/zones/${id}`, { method: 'DELETE' });
+        await zoneService.delete(id);
       } catch (e) {
         console.warn('Backend delete offline, removed locally');
       }
@@ -238,7 +248,7 @@ export const VirtualFences = () => {
     if (!formName.trim()) return;
 
     const newId = `zone_${Date.now().toString().slice(-4)}`;
-    const camImg = AVAILABLE_CAMERAS.find(c => c.name === formCamera)?.preview || '/fence-feed-alpha.jpg';
+    const camImg = AVAILABLE_CAMERAS.find(c => c.name === formCamera)?.preview || '/camera-perimeter.jpg';
     const newEntry: FenceZone = {
       id: newId,
       name: formName,
@@ -260,10 +270,7 @@ export const VirtualFences = () => {
 
     try {
       const camKey = formCamera.includes('CAM-01') ? 'cam1' : formCamera.includes('CAM-02') ? 'cam2' : 'cam4';
-      await fetch('/api/zones', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      await zoneService.create({
           id: newId,
           config: {
             name: formName,
@@ -274,8 +281,7 @@ export const VirtualFences = () => {
             dwell_time: 2.0,
             classes: ['person', 'vehicle']
           }
-        })
-      });
+        });
     } catch (err) {
       console.warn('Backend zone saved locally:', err);
     }
@@ -306,7 +312,7 @@ export const VirtualFences = () => {
 
   return (
     <div className="p-6 h-full flex flex-col bg-[#070B12] text-slate-200 overflow-y-auto space-y-6 font-sans relative">
-      
+
       {/* Toast Notification */}
       {fenceNotification && (
         <div className="fixed top-5 right-5 z-50 bg-[#0E1726] border border-cyan-500/50 shadow-2xl shadow-cyan-500/20 text-white px-4 py-3 rounded-xl flex items-center gap-3 backdrop-blur-md animate-in fade-in slide-in-from-top-4">
@@ -320,9 +326,9 @@ export const VirtualFences = () => {
 
       {/* Top Header with Backdrop */}
       <div className="relative rounded-2xl border border-[#1B2536] overflow-hidden shadow-2xl bg-[#0A0F18]">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center opacity-25 mix-blend-luminosity pointer-events-none"
-          style={{ backgroundImage: `url('/fences-header-bg.jpg')` }}
+          style={{ backgroundImage: `url('/bg-operations.jpg')` }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0A0F18] via-[#0A0F18]/90 to-transparent pointer-events-none" />
 
@@ -344,8 +350,8 @@ export const VirtualFences = () => {
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-1.5" />
               {activeZonesCount} / {zones.length} ARMED
             </Badge>
-            <Button 
-              className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-mono font-bold transition-all shadow-lg shadow-cyan-500/20 cursor-pointer" 
+            <Button
+              className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-mono font-bold transition-all shadow-lg shadow-cyan-500/20 cursor-pointer"
               onClick={() => {
                 setFormName(`Perimeter-Zone-${zones.length + 1}`);
                 setDrawingPoints([[80, 50], [280, 50], [280, 160], [80, 160]]);
@@ -364,12 +370,12 @@ export const VirtualFences = () => {
         {zones.map((zone) => {
           const isActive = zone.status === 'active';
           return (
-            <Card 
-              key={zone.id} 
+            <Card
+              key={zone.id}
               onClick={() => setSelectedZone(zone)}
               className={`bg-[#0A0F18] border rounded-xl overflow-hidden flex flex-col transition-all cursor-pointer shadow-xl ${
-                selectedZone.id === zone.id 
-                  ? 'border-cyan-500/60 ring-1 ring-cyan-500/30' 
+                selectedZone.id === zone.id
+                  ? 'border-cyan-500/60 ring-1 ring-cyan-500/30'
                   : 'border-[#1B2536] hover:border-slate-700'
               }`}
             >
@@ -388,7 +394,7 @@ export const VirtualFences = () => {
                     <span className={`text-[10px] font-mono font-bold ${isActive ? 'text-emerald-400' : 'text-slate-500'}`}>
                       {isActive ? 'ARMED' : 'STANDBY'}
                     </span>
-                    <Switch 
+                    <Switch
                       checked={isActive}
                       onCheckedChange={() => toggleZone(zone.id)}
                     />
@@ -399,12 +405,12 @@ export const VirtualFences = () => {
               <CardContent className="p-4 flex-1 space-y-4">
                 {/* Camera Feed Preview with Realistic Tripwire Graphic */}
                 <div className="aspect-video bg-black rounded-lg border border-[#1E293B] relative overflow-hidden flex items-center justify-center group">
-                  <img 
-                    src={zone.previewImg} 
+                  <img
+                    src={zone.previewImg}
                     alt={zone.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/feed-bop01.jpg';
+                      (e.target as HTMLImageElement).src = '/camera-perimeter.jpg';
                     }}
                   />
 
@@ -442,7 +448,7 @@ export const VirtualFences = () => {
                     {getSeverityBadge(zone.severity)}
                   </div>
                 </div>
-                
+
                 {/* Telemetry Stats: Type & Violations */}
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                   <div className="bg-[#070B12] p-2.5 rounded-lg border border-[#1B2536]">
@@ -467,7 +473,7 @@ export const VirtualFences = () => {
                     <span className="text-white font-bold">{zone.threatLevel}/100</span>
                   </div>
                   <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className={`h-full rounded-full ${
                         zone.threatLevel > 70 ? 'bg-red-500' : zone.threatLevel > 30 ? 'bg-amber-500' : 'bg-blue-500'
                       }`}
@@ -475,7 +481,7 @@ export const VirtualFences = () => {
                     />
                   </div>
                 </div>
-                
+
                 {/* Active Schedule */}
                 <div className="flex items-center justify-between pt-1 border-t border-[#151D2A] text-xs font-mono text-slate-400">
                   <span className="flex items-center">
@@ -486,12 +492,12 @@ export const VirtualFences = () => {
               </CardContent>
 
               <CardFooter className="p-3 border-t border-[#1B2536] bg-[#070B12] flex items-center justify-between">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="h-8 text-xs font-mono text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 px-2.5 cursor-pointer"
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setEventsZone(zone);
                     setShowEventsModal(true);
                   }}
@@ -501,12 +507,12 @@ export const VirtualFences = () => {
                 </Button>
 
                 <div className="flex items-center space-x-1">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer" 
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setFormName(zone.name);
                       setFormCamera(zone.camera);
                       setFormType(zone.type);
@@ -518,12 +524,12 @@ export const VirtualFences = () => {
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer" 
-                    onClick={(e) => { 
-                      e.stopPropagation(); 
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
                       handleDeleteZone(zone.id, zone.name);
                     }}
                     title="Delete Zone"
@@ -539,7 +545,7 @@ export const VirtualFences = () => {
 
       {/* Bottom Section: Zone Summary (Left) + Interactive Geopolitical Leaflet Boundary (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* Left: Zone Summary & Tripwire Health (4 cols) */}
         <div className="lg:col-span-4 bg-[#0A0F18] border border-[#1B2536] rounded-xl p-5 shadow-xl flex flex-col justify-between">
           <div>
@@ -579,13 +585,13 @@ export const VirtualFences = () => {
                 Tripwire AI Detection Profiles
               </span>
               <div className="grid grid-cols-2 gap-2 pt-1">
-                <button 
+                <button
                   onClick={() => showToast('AI Tripwire Filter calibrated to High Precision (0.15s window, 99.4% false alarm suppression).')}
                   className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold rounded text-[11px] border border-[#1E293B] text-center cursor-pointer transition-colors"
                 >
                   High Precision
                 </button>
-                <button 
+                <button
                   onClick={() => showToast('Thermal Auto-Gain Mode calibrated across all perimeter optical cameras.')}
                   className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded text-[11px] border border-[#1E293B] text-center cursor-pointer transition-colors"
                 >
@@ -596,7 +602,7 @@ export const VirtualFences = () => {
           </div>
 
           <div className="pt-4 border-t border-[#1B2536] mt-4 font-mono">
-            <Button 
+            <Button
               className="w-full bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs cursor-pointer shadow-lg shadow-cyan-950/40"
               onClick={() => {
                 setFormName(`Perimeter-Zone-${zones.length + 1}`);
@@ -625,12 +631,12 @@ export const VirtualFences = () => {
 
             {/* Tactical Intrusion Map Container with Realistic Satellite Preview */}
             <div className="relative rounded-xl overflow-hidden border border-[#1B2536] aspect-[21/9] bg-slate-950 group">
-              <img 
-                src="/fences-intrusion-map.jpg" 
+              <img
+                src="/clean-map-terrain.jpg"
                 alt="Intrusion Map"
                 className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700 select-none"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/command-center-ref.jpg';
+                  (e.target as HTMLImageElement).src = '/clean-map-terrain.jpg';
                 }}
               />
 
@@ -638,7 +644,7 @@ export const VirtualFences = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
 
               {/* Zone Pins on Map */}
-              <div 
+              <div
                 onClick={() => setSelectedZone(zones[0] || MOCK_ZONES[0])}
                 className="absolute top-[35%] left-[28%] -translate-x-1/2 -translate-y-1/2 cursor-pointer group/pin z-10"
               >
@@ -651,7 +657,7 @@ export const VirtualFences = () => {
                 </div>
               </div>
 
-              <div 
+              <div
                 onClick={() => setSelectedZone(zones[1] || MOCK_ZONES[1])}
                 className="absolute top-[52%] left-[64%] -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10"
               >
@@ -663,7 +669,7 @@ export const VirtualFences = () => {
                 </div>
               </div>
 
-              <div 
+              <div
                 onClick={() => setSelectedZone(zones[2] || MOCK_ZONES[2])}
                 className="absolute top-[70%] left-[45%] -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10"
               >
@@ -692,7 +698,7 @@ export const VirtualFences = () => {
 
           <div className="mt-4 pt-3 border-t border-[#1B2536] flex flex-wrap items-center justify-between text-xs font-mono text-slate-400 gap-2">
             <span>GIS Synchronization: <strong className="text-emerald-400">Active (RTK Accuracy ±2cm)</strong></span>
-            <button 
+            <button
               onClick={() => showToast('Spatial GIS boundaries recalibrated and synchronized with Indian Satellite Positioning Grid (RTK ±2cm).')}
               className="text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 cursor-pointer"
             >
@@ -707,7 +713,7 @@ export const VirtualFences = () => {
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
           <div className="bg-[#0A0F18] border border-cyan-500/40 rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl shadow-cyan-950/50 flex flex-col font-mono text-xs">
-            
+
             {/* Modal Header */}
             <div className="p-4 border-b border-[#1B2536] flex items-center justify-between bg-[#070B12]">
               <div className="flex items-center gap-2.5">
@@ -721,7 +727,7 @@ export const VirtualFences = () => {
                   <p className="text-[11px] text-slate-400">Click on camera frame to plot polygon boundary vertices</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setShowCreateModal(false)}
                 className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
               >
@@ -730,14 +736,14 @@ export const VirtualFences = () => {
             </div>
 
             <form onSubmit={handleCreateZoneSubmit} className="p-5 space-y-4">
-              
+
               {/* Form Controls Row */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 {/* Zone Name */}
                 <div>
                   <label className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Zone Name</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="e.g. Sector-4-Restricted-Alpha"
@@ -749,7 +755,7 @@ export const VirtualFences = () => {
                 {/* Camera Selector */}
                 <div>
                   <label className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Camera Feed</label>
-                  <select 
+                  <select
                     value={formCamera}
                     onChange={(e) => setFormCamera(e.target.value)}
                     className="w-full bg-[#070B12] border border-[#1B2536] rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500 font-mono"
@@ -763,7 +769,7 @@ export const VirtualFences = () => {
                 {/* Fence Type */}
                 <div>
                   <label className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Boundary Type</label>
-                  <select 
+                  <select
                     value={formType}
                     onChange={(e) => setFormType(e.target.value as any)}
                     className="w-full bg-[#070B12] border border-[#1B2536] rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500 font-mono"
@@ -777,7 +783,7 @@ export const VirtualFences = () => {
                 {/* Severity */}
                 <div>
                   <label className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Threat Level</label>
-                  <select 
+                  <select
                     value={formSeverity}
                     onChange={(e) => setFormSeverity(e.target.value as any)}
                     className="w-full bg-[#070B12] border border-[#1B2536] rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-cyan-500 font-mono"
@@ -793,14 +799,14 @@ export const VirtualFences = () => {
               {/* Interactive Canvas Drawing Area */}
               <div className="relative rounded-xl overflow-hidden border border-[#1B2536] bg-black aspect-[16/9] max-h-[380px] flex items-center justify-center select-none shadow-inner">
                 {/* Background Camera Snapshot */}
-                <img 
-                  src={AVAILABLE_CAMERAS.find(c => c.name === formCamera)?.preview || '/fence-feed-alpha.jpg'} 
+                <img
+                  src={AVAILABLE_CAMERAS.find(c => c.name === formCamera)?.preview || '/camera-perimeter.jpg'}
                   alt="Camera Frame"
                   className="w-full h-full object-cover"
                 />
 
                 {/* Drawing HTML Canvas */}
-                <canvas 
+                <canvas
                   ref={canvasRef}
                   width={640}
                   height={360}
@@ -817,21 +823,21 @@ export const VirtualFences = () => {
 
                 {/* Canvas Floating Toolbar */}
                 <div className="absolute bottom-3 right-3 flex items-center gap-2 z-20">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setDrawingPoints([[60, 40], [280, 40], [280, 180], [60, 180]])}
                     className="px-2.5 py-1.5 bg-[#0A0F18]/90 hover:bg-[#121B2B] text-cyan-300 rounded border border-cyan-500/40 text-[10px] font-bold cursor-pointer"
                   >
                     Preset Box
                   </button>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setDrawingPoints([[30, 120], [330, 120]])}
                     className="px-2.5 py-1.5 bg-[#0A0F18]/90 hover:bg-[#121B2B] text-amber-300 rounded border border-amber-500/40 text-[10px] font-bold cursor-pointer"
                   >
                     Preset Tripwire
                   </button>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setDrawingPoints(prev => prev.slice(0, -1))}
                     disabled={drawingPoints.length === 0}
@@ -840,7 +846,7 @@ export const VirtualFences = () => {
                   >
                     <Undo className="w-3.5 h-3.5" />
                   </button>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setDrawingPoints([])}
                     disabled={drawingPoints.length === 0}
@@ -873,16 +879,16 @@ export const VirtualFences = () => {
 
               {/* Modal Actions */}
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1B2536]">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowCreateModal(false)}
                   className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
 
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={savedSuccess}
                   className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-cyan-500/25"
                 >
@@ -909,7 +915,7 @@ export const VirtualFences = () => {
       {showEventsModal && eventsZone && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
           <div className="bg-[#0A0F18] border border-cyan-500/40 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl flex flex-col font-mono text-xs">
-            
+
             {/* Header */}
             <div className="p-4 border-b border-[#1B2536] flex items-center justify-between bg-[#070B12]">
               <div className="flex items-center gap-2.5">
@@ -921,7 +927,7 @@ export const VirtualFences = () => {
                   <p className="text-[11px] text-slate-400">Audit log for {eventsZone.camera}</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setShowEventsModal(false)}
                 className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
               >
@@ -932,14 +938,14 @@ export const VirtualFences = () => {
             {/* Content List */}
             <div className="p-5 space-y-3">
               {[
-                { time: '13:18:56 IST', target: 'Human Intruder (P-104)', confidence: '96.4%', img: '/thumb-ev-17598.jpg', status: 'PATROL DISPATCHED' },
-                { time: '12:44:10 IST', target: 'Unidentified Biological (A-002)', confidence: '92.1%', img: '/thumb-ev-17602.jpg', status: 'VERIFIED WILDLIFE' },
-                { time: '11:15:22 IST', target: 'Vehicle Sentry (V-018)', confidence: '98.2%', img: '/thumb-ev-17609.jpg', status: 'RESOLVED' },
+                { time: '13:18:56 IST', target: 'Human Intruder (P-104)', confidence: '96.4%', img: '/camera-vehicle.jpg', status: 'PATROL DISPATCHED' },
+                { time: '12:44:10 IST', target: 'Unidentified Biological (A-002)', confidence: '92.1%', img: '/camera-pedestrian.jpg', status: 'VERIFIED WILDLIFE' },
+                { time: '11:15:22 IST', target: 'Vehicle Sentry (V-018)', confidence: '98.2%', img: '/bg-traffic.jpg', status: 'RESOLVED' },
               ].map((ev, idx) => (
                 <div key={idx} className="p-3 bg-[#070B12] rounded-xl border border-[#1E293B] flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-10 rounded overflow-hidden border border-slate-700 bg-black flex-shrink-0">
-                      <img src={ev.img} alt="Snapshot" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/feed-bop01.jpg'; }} />
+                      <img src={ev.img} alt="Snapshot" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/camera-perimeter.jpg'; }} />
                     </div>
                     <div>
                       <div className="font-bold text-white text-xs">{ev.target}</div>
@@ -955,7 +961,7 @@ export const VirtualFences = () => {
 
             {/* Footer */}
             <div className="p-4 border-t border-[#1B2536] bg-[#070B12] flex justify-end">
-              <button 
+              <button
                 onClick={() => setShowEventsModal(false)}
                 className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold cursor-pointer"
               >

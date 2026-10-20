@@ -1,10 +1,13 @@
-import React, { useState, useRef } from 'react';
-import { 
-  Upload, Play, FileText, Download, CheckCircle2, AlertTriangle, 
-  Clock, Shield, User, Car, Eye, RefreshCw, BarChart2, Activity,
-  FileSpreadsheet, FileCode, Video, Sparkles, Check, HardDrive, Cpu
-} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import {
+  Activity,
+  Download,
+  Eye,
+  Play,
+  Upload,
+  Video
+} from 'lucide-react';
+import React,{ useRef,useState } from 'react';
 
 export const VideoAnalyzer: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -26,7 +29,7 @@ export const VideoAnalyzer: React.FC = () => {
   };
 
   const handleLoadSample = () => {
-    setVideoPreviewUrl('/feed-bop01.jpg');
+    setVideoPreviewUrl('/camera-perimeter.jpg');
     setSelectedFile(new File([''], 'thermal_patrol_sector4.mp4', { type: 'video/mp4' }));
     setAnalysisReport(null);
   };
@@ -101,12 +104,12 @@ export const VideoAnalyzer: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-[#070B12] text-slate-200 overflow-y-auto space-y-6 p-6 font-sans">
-      
+
       {/* Top Header Card (Mirrors media_1790496162587.jpg) */}
       <div className="relative rounded-2xl border border-[#1B2536] overflow-hidden shadow-2xl bg-[#0A0F18] p-5">
-        <div 
+        <div
           className="absolute right-0 top-0 bottom-0 w-80 bg-cover bg-center opacity-30 mix-blend-luminosity pointer-events-none"
-          style={{ backgroundImage: `url('/analyzer-header-bg.jpg')` }}
+          style={{ backgroundImage: `url('/bg-analytics.jpg')` }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0A0F18] via-[#0A0F18]/90 to-transparent pointer-events-none" />
 
@@ -129,7 +132,7 @@ export const VideoAnalyzer: React.FC = () => {
 
       {/* Main 2-Column Split: Upload Footage (Left) + Source Video Stream (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* Left Column: Select or Upload Footage */}
         <div className="lg:col-span-6 bg-[#0A0F18] border border-[#1B2536] rounded-2xl p-5 shadow-xl flex flex-col justify-between space-y-4">
           <div>
@@ -144,13 +147,13 @@ export const VideoAnalyzer: React.FC = () => {
             </p>
 
             {/* Dropzone Box with Night Watchtower Graphic */}
-            <div 
+            <div
               onClick={() => fileInputRef.current?.click()}
               className="relative rounded-xl border border-dashed border-[#1E293B] hover:border-cyan-500/50 bg-[#070B12] p-8 text-center cursor-pointer transition-colors group overflow-hidden"
             >
-              <div 
+              <div
                 className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-25 transition-opacity pointer-events-none"
-                style={{ backgroundImage: `url('/analyzer-dropzone-preview.jpg')` }}
+                style={{ backgroundImage: `url('/bg-surveillance.jpg')` }}
               />
               <div className="relative z-10 flex flex-col items-center justify-center space-y-2">
                 <div className="p-3 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 group-hover:scale-110 transition-transform">
@@ -163,12 +166,12 @@ export const VideoAnalyzer: React.FC = () => {
                   Drag and drop video clip here
                 </div>
               </div>
-              <input 
+              <input
                 ref={fileInputRef}
-                type="file" 
-                accept="video/*" 
+                type="file"
+                accept="video/*"
                 onChange={handleFileChange}
-                className="hidden" 
+                className="hidden"
               />
             </div>
 
@@ -229,26 +232,29 @@ export const VideoAnalyzer: React.FC = () => {
             {/* Video Container */}
             <div className="relative rounded-xl overflow-hidden border border-[#1E293B] aspect-video bg-black flex items-center justify-center shadow-2xl">
               {videoPreviewUrl && videoPreviewUrl.endsWith('.jpg') ? (
-                <img 
-                  src={videoPreviewUrl} 
-                  alt="Thermal Sample" 
-                  className="w-full h-full object-cover" 
+                <img
+                  src={videoPreviewUrl}
+                  alt="Thermal Sample"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/bg-operations.jpg';
+                  }}
                 />
               ) : videoPreviewUrl ? (
-                <video 
+                <video
                   ref={videoRef}
-                  src={videoPreviewUrl} 
-                  controls 
+                  src={videoPreviewUrl}
+                  controls
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full relative flex items-center justify-center">
-                  <img 
-                    src="/analyzer-stream-preview.jpg" 
+                  <img
+                    src="/camera-perimeter.jpg"
                     alt="Stream Placeholder"
                     className="w-full h-full object-cover opacity-60"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/feed-watch01.jpg';
+                      (e.target as HTMLImageElement).src = '/bg-operations.jpg';
                     }}
                   />
                   <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center space-y-2 pointer-events-none p-4 text-center">
@@ -296,9 +302,9 @@ export const VideoAnalyzer: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={exportJSON}
                 className="bg-[#070B12] border-[#1E293B] text-cyan-400 hover:bg-slate-800 text-xs"
               >

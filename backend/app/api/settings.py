@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Body
 from typing import Dict, Any
 from app.api.auth import get_current_user
 
-router = APIRouter(prefix="/api/settings", tags=["settings"])
+router = APIRouter(prefix="/settings", tags=["settings"])
 
 # Mock store for settings
 MOCK_SETTINGS = {

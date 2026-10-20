@@ -1,11 +1,25 @@
-import React, { useState } from 'react';
-import { 
-  Shield, Clock, MapPin, Users, FileText, CheckCircle, AlertTriangle, 
-  Paperclip, Activity, Search, Filter, Plus, ChevronDown, Share2, 
-  MoreVertical, Play, Maximize2, Radio, Crosshair, ArrowRight, Video,
-  Compass, Eye, ShieldCheck, RefreshCw, Send, Check
+import {
+  Activity,
+  ArrowRight,
+  Check,
+  Clock,
+  Compass,
+  Crosshair,
+  FileText,
+  MapPin,
+  Maximize2,
+  MoreVertical,
+  Paperclip,
+  Plus,
+  RefreshCw,
+  Search,
+  Send,
+  Share2,
+  Shield,
+  Video
 } from 'lucide-react';
-import { RiskScoreDisplay } from '../components/alerts/RiskScoreDisplay';
+import React,{ useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface IncidentEvent {
   id: number;
@@ -57,7 +71,7 @@ const MOCK_INCIDENTS: Incident[] = [
     riskScore: 87,
     assignedTo: 'operator_alpha',
     createdAt: new Date(Date.now() - 30 * 60000).toISOString(),
-    thumb: '/feed-bop01.jpg',
+    thumb: '/camera-perimeter.jpg',
     targetType: 'Person',
     trackId: '#TRK-9921',
     firstDetected: '12:52:41',
@@ -86,7 +100,7 @@ const MOCK_INCIDENTS: Incident[] = [
     riskScore: 72,
     assignedTo: 'operator_beta',
     createdAt: new Date(Date.now() - 120 * 60000).toISOString(),
-    thumb: '/feed-road01.jpg',
+    thumb: '/bg-traffic.jpg',
     targetType: 'Vehicle',
     trackId: '#TRK-8814',
     firstDetected: '10:45:10',
@@ -113,7 +127,7 @@ const MOCK_INCIDENTS: Incident[] = [
     riskScore: 45,
     assignedTo: 'operator_gamma',
     createdAt: new Date(Date.now() - 24 * 3600000).toISOString(),
-    thumb: '/feed-watch01.jpg',
+    thumb: '/bg-operations.jpg',
     targetType: 'Group (3)',
     trackId: '#TRK-7719',
     firstDetected: '08:14:22',
@@ -132,6 +146,7 @@ const MOCK_INCIDENTS: Incident[] = [
 ];
 
 export function IncidentsPage() {
+  const navigate = useNavigate();
   const [incidents, setIncidents] = useState<Incident[]>(MOCK_INCIDENTS);
   const [selectedIncident, setSelectedIncident] = useState<Incident>(MOCK_INCIDENTS[0]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -139,15 +154,33 @@ export function IncidentsPage() {
   const [sectorFilter, setSectorFilter] = useState('ALL');
   const [activeTab, setActiveTab] = useState<'Overview' | 'Evidence' | 'Timeline' | 'Actions' | 'Related Events' | 'Audit Log'>('Overview');
   const [newNote, setNewNote] = useState('');
+  const [showCreateIncident, setShowCreateIncident] = useState(false);
+  const [newIncidentTitle, setNewIncidentTitle] = useState('');
+  const [newIncidentLocation, setNewIncidentLocation] = useState('');
+  const [newIncidentSeverity, setNewIncidentSeverity] = useState<Incident['severity']>('MEDIUM');
+  const [cameraAngle, setCameraAngle] = useState(0);
+  const [feedExpanded, setFeedExpanded] = useState(false);
+  const [actionMessage, setActionMessage] = useState('');
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [mobileDetailVisible, setMobileDetailVisible] = useState(false);
 
   const filteredIncidents = incidents.filter(inc => {
-    const matchesSearch = inc.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matchesSearch = inc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           inc.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           inc.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || inc.status === statusFilter;
     const matchesSector = sectorFilter === 'ALL' || inc.sector === sectorFilter;
     return matchesSearch && matchesStatus && matchesSector;
   });
+  const activeIncidentCount = incidents.filter(incident => incident.status !== 'Resolved').length;
+  const criticalIncidentCount = incidents.filter(incident => incident.severity === 'CRITICAL' && incident.status !== 'Resolved').length;
+  const highIncidentCount = incidents.filter(incident => incident.severity === 'HIGH' && incident.status !== 'Resolved').length;
+  const mediumIncidentCount = incidents.filter(incident => incident.severity === 'MEDIUM' && incident.status !== 'Resolved').length;
+  const resolvedIncidentCount = incidents.filter(incident => incident.status === 'Resolved').length;
+  const activeCamera = selectedIncident.cameras[cameraAngle] || `${selectedIncident.cameras[0]}-ALT`;
+  const feedImage = cameraAngle === 0
+    ? selectedIncident.thumb
+    : selectedIncident.targetType.toLowerCase().includes('vehicle') ? '/camera-vehicle.jpg' : '/camera-perimeter.jpg';
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
@@ -184,20 +217,127 @@ export function IncidentsPage() {
       text: newNote,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
-    setSelectedIncident(prev => ({
-      ...prev,
-      notes: [note, ...prev.notes]
-    }));
+    const event: IncidentEvent = {
+      id: Date.now() + 1,
+      time: note.time,
+      action: 'Investigation Note Added',
+      details: newNote.trim(),
+      badge: 'NOTE',
+    };
+    const updated = { ...selectedIncident, notes: [note, ...selectedIncident.notes], timeline: [event, ...selectedIncident.timeline] };
+    setSelectedIncident(updated);
+    setIncidents(prev => prev.map(incident => incident.id === updated.id ? updated : incident));
     setNewNote('');
   };
 
+  const updateSelectedIncident = (
+    changes: Partial<Incident>,
+    action?: string,
+    details?: string,
+    badge = 'INFO',
+  ) => {
+    const event = action ? {
+      id: Date.now(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      action,
+      details: details || '',
+      badge,
+    } : null;
+    const updated: Incident = {
+      ...selectedIncident,
+      ...changes,
+      timeline: event ? [event, ...selectedIncident.timeline] : selectedIncident.timeline,
+    };
+    setSelectedIncident(updated);
+    setIncidents(prev => prev.map(incident => incident.id === updated.id ? updated : incident));
+  };
+
   const handleUpdateStatus = (newStatus: Incident['status']) => {
-    setSelectedIncident(prev => ({ ...prev, status: newStatus }));
-    setIncidents(prev => prev.map(inc => inc.id === selectedIncident.id ? { ...inc, status: newStatus } : inc));
+    if (newStatus === selectedIncident.status) return;
+    updateSelectedIncident({ status: newStatus }, 'Status Changed', `Incident status changed to ${newStatus}.`, newStatus === 'Resolved' ? 'RESOLVED' : 'INFO');
+  };
+
+  const notify = (message: string) => {
+    setActionMessage(message);
+    window.setTimeout(() => setActionMessage(''), 3500);
+  };
+
+  const downloadDossier = () => {
+    const blob = new Blob([JSON.stringify(selectedIncident, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${selectedIncident.id.toLowerCase()}-dossier.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    notify(`Dossier downloaded for ${selectedIncident.id}`);
+  };
+
+  const shareDossier = async () => {
+    const shareText = `${selectedIncident.id}: ${selectedIncident.title} — ${selectedIncident.location}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `Incident ${selectedIncident.id}`, text: shareText });
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareText);
+      } else {
+        downloadDossier();
+        return;
+      }
+      notify(`Incident link details shared for ${selectedIncident.id}`);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      downloadDossier();
+    }
+  };
+
+  const handleCreateIncident = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!newIncidentTitle.trim() || !newIncidentLocation.trim()) return;
+    const now = new Date();
+    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const incident: Incident = {
+      id: `INC-${String(Date.now()).slice(-4)}`,
+      title: newIncidentTitle.trim(),
+      severity: newIncidentSeverity,
+      status: 'Open',
+      location: newIncidentLocation.trim(),
+      sector: newIncidentLocation.match(/Sector\s+\d+/i)?.[0] || 'Sector 4',
+      cameras: ['CAM-MANUAL-01'],
+      riskScore: newIncidentSeverity === 'CRITICAL' ? 90 : newIncidentSeverity === 'HIGH' ? 70 : newIncidentSeverity === 'MEDIUM' ? 45 : 20,
+      assignedTo: 'Unassigned',
+      createdAt: now.toISOString(),
+      thumb: '/camera-checkpoint.jpg',
+      targetType: 'Unclassified',
+      trackId: '—',
+      firstDetected: time,
+      lastSeen: time,
+      aiConf: 0,
+      timeline: [{ id: Date.now(), time, action: 'Incident Created', details: 'Incident manually created by an operator.', badge: 'OPEN' }],
+      alerts: [],
+      evidence: [],
+      notes: [],
+    };
+    setIncidents(prev => [incident, ...prev]);
+    setSelectedIncident(incident);
+    setMobileDetailVisible(true);
+    setSearchTerm('');
+    setStatusFilter('ALL');
+    setSectorFilter('ALL');
+    setActiveTab('Overview');
+    setCameraAngle(0);
+    setNewIncidentTitle('');
+    setNewIncidentLocation('');
+    setNewIncidentSeverity('MEDIUM');
+    setShowCreateIncident(false);
+    notify(`${incident.id} created`);
   };
 
   return (
     <div className="flex flex-col h-full bg-[#070B12] text-slate-200 overflow-y-auto">
+      {actionMessage && <div role="status" aria-live="polite" className="fixed bottom-5 right-5 z-50 max-w-[calc(100vw-2rem)] rounded-lg border border-emerald-500/40 bg-[#0A0F18] px-4 py-3 text-xs font-semibold text-emerald-300 shadow-xl">{actionMessage}</div>}
       {/* Top Header & Stat Banner (Mirrors media_1790494751038.jpg) */}
       <div className="bg-[#0A0F18] border-b border-[#1B2536] px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -217,19 +357,20 @@ export function IncidentsPage() {
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 bg-[#070B12] border border-[#1B2536] rounded-lg px-3 py-1.5 font-mono text-xs">
               <span className="text-slate-400">Active Incidents:</span>
-              <span className="font-bold text-white">14</span>
+              <span className="font-bold text-white">{activeIncidentCount}</span>
               <span className="text-slate-600">|</span>
-              <span className="text-red-400 font-bold">2 Critical</span>
+              <span className="text-red-400 font-bold">{criticalIncidentCount} Critical</span>
               <span className="text-slate-600">|</span>
-              <span className="text-orange-400 font-bold">4 High</span>
+              <span className="text-orange-400 font-bold">{highIncidentCount} High</span>
               <span className="text-slate-600">|</span>
-              <span className="text-amber-400 font-bold">5 Med</span>
+              <span className="text-amber-400 font-bold">{mediumIncidentCount} Med</span>
               <span className="text-slate-600">|</span>
-              <span className="text-emerald-400 font-bold">45 Resolved Today</span>
+              <span className="text-emerald-400 font-bold">{resolvedIncidentCount} Resolved</span>
             </div>
 
-            <button 
-              onClick={() => alert('New Incident Creation Dialog')}
+            <button
+              type="button"
+              onClick={() => setShowCreateIncident(true)}
               className="flex items-center gap-2 px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold rounded-lg text-xs font-mono transition-colors shadow-lg shadow-cyan-950/40"
             >
               <Plus className="w-3.5 h-3.5 stroke-[3]" />
@@ -279,7 +420,7 @@ export function IncidentsPage() {
               <option value="Sector 7">Sector 7</option>
             </select>
 
-            <button 
+            <button
               onClick={() => { setSearchTerm(''); setStatusFilter('ALL'); setSectorFilter('ALL'); }}
               className="p-1.5 bg-[#070B12] border border-[#1B2536] hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white"
               title="Reset Filters"
@@ -291,21 +432,32 @@ export function IncidentsPage() {
       </div>
 
       {/* Main Workspace Body: 2 Columns */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 min-h-0 flex overflow-hidden md:flex-row">
         {/* Left List Pane (Mirrors media_1790494751038.jpg left panel) */}
-        <div className="w-full md:w-[380px] lg:w-[420px] flex-shrink-0 border-r border-[#1B2536] bg-[#0A0F18]/60 flex flex-col overflow-hidden">
+        <div className={`${mobileDetailVisible ? 'hidden md:flex' : 'flex'} w-full md:w-[380px] lg:w-[420px] min-h-0 flex-shrink-0 border-r border-[#1B2536] bg-[#0A0F18]/60 flex-col overflow-hidden`}>
           <div className="px-4 py-2.5 bg-[#070B12] border-b border-[#1B2536] flex items-center justify-between text-xs font-mono text-slate-400">
             <span>SHOWING {filteredIncidents.length} CORRELATED CASES</span>
-            <span className="text-[11px] text-cyan-400 font-bold">AUTO-SYNC ON</span>
+            <span className="text-[11px] text-cyan-400 font-bold">LOCAL CASES</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
+          <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
             {filteredIncidents.map(inc => {
               const isSelected = selectedIncident.id === inc.id;
               return (
                 <div
                   key={inc.id}
-                  onClick={() => setSelectedIncident(inc)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSelectedIncident(inc);
+                      setCameraAngle(0);
+                      setMobileDetailVisible(true);
+                    }
+                  }}
+                  onClick={() => { setSelectedIncident(inc); setCameraAngle(0); setMobileDetailVisible(true); }}
+                  aria-pressed={isSelected}
                   className={`p-3 rounded-xl border cursor-pointer transition-all ${
                     isSelected
                       ? 'bg-[#0E1624] border-cyan-500/60 shadow-lg shadow-cyan-950/30 ring-1 ring-cyan-500/30'
@@ -315,9 +467,9 @@ export function IncidentsPage() {
                   <div className="flex gap-3">
                     {/* Camera Thumbnail */}
                     <div className="relative w-20 h-16 rounded-lg overflow-hidden bg-slate-900 border border-[#1E293B] flex-shrink-0">
-                      <img 
-                        src={inc.thumb} 
-                        alt={inc.id} 
+                      <img
+                        src={inc.thumb}
+                        alt={inc.id}
                         className="w-full h-full object-cover"
                         onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                       />
@@ -337,7 +489,7 @@ export function IncidentsPage() {
                       </div>
 
                       <div className="font-bold text-xs text-slate-200 truncate mt-0.5">{inc.title}</div>
-                      
+
                       <div className="text-[11px] text-slate-400 font-mono truncate flex items-center gap-1">
                         <MapPin className="w-3 h-3 text-cyan-400 flex-shrink-0" />
                         <span className="truncate">{inc.location}</span>
@@ -365,7 +517,10 @@ export function IncidentsPage() {
         </div>
 
         {/* Right Detail Workspace (Mirrors media_1790494751038.jpg right side) */}
-        <div className="flex-1 flex flex-col overflow-y-auto bg-[#070B12]">
+        <div className={`${mobileDetailVisible ? 'flex' : 'hidden md:flex'} flex-1 min-w-0 min-h-0 flex-col overflow-y-auto bg-[#070B12] custom-scrollbar`}>
+          <div className="border-b border-[#1B2536] bg-[#070B12] p-2 md:hidden">
+            <button type="button" onClick={() => setMobileDetailVisible(false)} className="rounded-lg border border-[#1E293B] px-3 py-2 text-xs font-semibold text-cyan-300 hover:bg-slate-800">← All incidents</button>
+          </div>
           {/* Selected Incident Banner */}
           <div className="p-4 bg-[#0A0F18] border-b border-[#1B2536] flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -387,6 +542,7 @@ export function IncidentsPage() {
             {/* Quick Actions in Header */}
             <div className="flex items-center gap-2 font-mono text-xs">
               <select
+                aria-label="Selected incident status"
                 value={selectedIncident.status}
                 onChange={(e) => handleUpdateStatus(e.target.value as any)}
                 className="bg-[#070B12] border border-cyan-500/40 text-cyan-300 font-bold rounded-lg px-3 py-1.5 outline-none cursor-pointer"
@@ -397,21 +553,34 @@ export function IncidentsPage() {
                 <option value="Open">Status: Open</option>
               </select>
 
-              <button 
-                onClick={() => alert(`Shared dossier for ${selectedIncident.id}`)}
+              <button
+                type="button"
+                onClick={shareDossier}
                 className="p-1.5 bg-[#070B12] border border-[#1B2536] hover:bg-slate-800 rounded-lg text-slate-300"
                 title="Share Dossier"
+                aria-label="Share incident dossier"
               >
                 <Share2 className="w-4 h-4" />
               </button>
 
-              <button 
-                onClick={() => alert('Incident Options')}
-                className="p-1.5 bg-[#070B12] border border-[#1B2536] hover:bg-slate-800 rounded-lg text-slate-300"
-                title="More Options"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setOptionsOpen(open => !open)}
+                  className="p-1.5 bg-[#070B12] border border-[#1B2536] hover:bg-slate-800 rounded-lg text-slate-300"
+                  title="More Options"
+                  aria-label="More incident actions"
+                  aria-expanded={optionsOpen}
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+                {optionsOpen && (
+                  <div className="absolute right-0 top-full mt-1 z-30 min-w-48 rounded-lg border border-[#1E293B] bg-[#0E1624] p-1 shadow-xl text-xs">
+                    <button type="button" onClick={() => { downloadDossier(); setOptionsOpen(false); }} className="w-full rounded px-3 py-2 text-left text-slate-200 hover:bg-slate-800">Download JSON dossier</button>
+                    <button type="button" onClick={() => { navigate('/audit-log'); setOptionsOpen(false); }} className="w-full rounded px-3 py-2 text-left text-slate-200 hover:bg-slate-800">Open audit log</button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -420,10 +589,13 @@ export function IncidentsPage() {
             {(['Overview', 'Evidence', 'Timeline', 'Actions', 'Related Events', 'Audit Log'] as const).map(tab => (
               <button
                 key={tab}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab}
                 onClick={() => setActiveTab(tab)}
                 className={`px-3 py-2.5 font-bold transition-colors border-b-2 whitespace-nowrap ${
-                  activeTab === tab 
-                    ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20' 
+                  activeTab === tab
+                    ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
                     : 'border-transparent text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -433,16 +605,17 @@ export function IncidentsPage() {
           </div>
 
           {/* Tab Content: Overview (Default) */}
+          {activeTab === 'Overview' ? (
           <div className="p-4 space-y-4">
             {/* Top Grid: Video Feed (Left) + Incident Metadata & Immediate Actions (Right) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              
+
               {/* CCTV Live Feed Player (Mirrors media_1790494751038.jpg central feed) */}
               <div className="lg:col-span-7 bg-[#0A0F18] border border-[#1B2536] rounded-xl overflow-hidden shadow-xl flex flex-col">
                 <div className="px-3 py-2 bg-[#070B12] border-b border-[#1B2536] flex items-center justify-between text-xs font-mono">
                   <div className="flex items-center gap-2">
                     <Video className="w-3.5 h-3.5 text-cyan-400" />
-                    <span className="font-bold text-white">{selectedIncident.cameras[0]} North Fence Alpha</span>
+                    <span className="font-bold text-white">{activeCamera} · {selectedIncident.location}</span>
                     <span className="px-1.5 py-0.2 bg-red-500/20 text-red-400 border border-red-500/40 rounded text-[9px] font-bold animate-pulse">
                       ● LIVE
                     </span>
@@ -454,12 +627,12 @@ export function IncidentsPage() {
 
                 {/* Video Image Container with HUD */}
                 <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
-                  <img 
-                    src="/incident-feed-crop.jpg" 
+                  <img
+                    src={feedImage}
                     alt="Incident Feed"
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/feed-bop01.jpg';
+                      (e.target as HTMLImageElement).src = '/camera-perimeter.jpg';
                     }}
                   />
 
@@ -475,40 +648,26 @@ export function IncidentsPage() {
 
                   {/* Top-Right HUD Crosshair */}
                   <div className="absolute top-3 right-3 font-mono text-[10px] text-cyan-400 bg-black/70 px-2 py-1 rounded border border-cyan-500/30">
-                    REC [2026-09-27 12:53:04 UTC]
+                    CASE FRAME · {selectedIncident.lastSeen}
                   </div>
 
-                  {/* Bottom Playback Bar */}
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2.5 flex items-center justify-between text-xs font-mono text-slate-300">
-                    <div className="flex items-center gap-3">
-                      <button className="p-1 hover:text-cyan-400 transition-colors">
-                        <Play className="w-4 h-4 fill-current" />
-                      </button>
-                      <span className="text-[10px] text-slate-400">00:14 / 01:30</span>
-                    </div>
-
-                    {/* Progress track */}
-                    <div className="flex-1 mx-4 h-1.5 bg-slate-800 rounded-full overflow-hidden relative cursor-pointer">
-                      <div className="h-full bg-cyan-500 w-[45%]" />
-                      <div className="absolute left-[45%] top-0 bottom-0 w-2 bg-white rounded-full -translate-x-1" />
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button className="p-1 hover:text-cyan-400">
-                        <Maximize2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    <span className="text-[10px] text-slate-300">INCIDENT SNAPSHOT</span>
+                    <button type="button" onClick={() => setFeedExpanded(true)} className="rounded p-1 hover:text-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400" aria-label="View incident image full size">
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
 
                 {/* Sub-bar below video */}
                 <div className="px-3 py-2 bg-[#0A0F18] border-t border-[#1B2536] flex items-center justify-between text-[11px] font-mono text-slate-400">
                   <span>Cross-Camera Handoff: <strong className="text-white">CAM-N-02 (Ready)</strong></span>
-                  <button 
-                    onClick={() => alert('Switched to secondary angle')}
+                  <button
+                    type="button"
+                    onClick={() => setCameraAngle(angle => angle === 0 ? 1 : 0)}
                     className="text-cyan-400 hover:text-cyan-300 font-bold"
                   >
-                    Switch to Angle 2 →
+                    {cameraAngle === 0 ? 'Switch to Angle 2 →' : '← Switch to Angle 1'}
                   </button>
                 </div>
               </div>
@@ -575,16 +734,18 @@ export function IncidentsPage() {
                 {/* Quick Action Buttons (Mirrors media_1790494751038.jpg) */}
                 <div className="mt-4 pt-3 border-t border-[#1B2536] space-y-2 font-mono">
                   <div className="grid grid-cols-2 gap-2">
-                    <button 
-                      onClick={() => { handleUpdateStatus('Investigating'); alert(`Acknowledged ${selectedIncident.id}`); }}
+                    <button
+                      type="button"
+                      onClick={() => updateSelectedIncident({ status: 'Investigating' }, 'Incident Acknowledged', 'An operator acknowledged this incident.', 'ACK')}
                       className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5"
                     >
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                       Acknowledge
                     </button>
 
-                    <button 
-                      onClick={() => alert(`Patrol Charlie dispatched to ${selectedIncident.location}`)}
+                    <button
+                      type="button"
+                      onClick={() => updateSelectedIncident({ status: 'Assigned', assignedTo: 'Patrol Charlie' }, 'Patrol Dispatched', `Patrol Charlie assigned to ${selectedIncident.location}.`, 'DISPATCH')}
                       className="px-3 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-red-950/40"
                     >
                       <Shield className="w-3.5 h-3.5" />
@@ -592,8 +753,9 @@ export function IncidentsPage() {
                     </button>
                   </div>
 
-                  <button 
-                    onClick={() => alert(`Evidence dossier generated for ${selectedIncident.id}`)}
+                  <button
+                    type="button"
+                    onClick={downloadDossier}
                     className="w-full px-3 py-2 bg-[#070B12] hover:bg-slate-800 border border-[#1E293B] text-slate-200 font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
                     <FileText className="w-3.5 h-3.5 text-cyan-400" />
@@ -606,7 +768,7 @@ export function IncidentsPage() {
 
             {/* Bottom Row: Map Location (Left) + Recent Timeline & Notes (Right) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              
+
               {/* Related Map Location (Mirrors media_1790494751038.jpg bottom left) */}
               <div className="lg:col-span-5 bg-[#0A0F18] border border-[#1B2536] rounded-xl p-4 shadow-xl flex flex-col justify-between">
                 <div>
@@ -620,15 +782,15 @@ export function IncidentsPage() {
 
                   {/* Satellite / Tactical Map Graphic */}
                   <div className="relative rounded-lg overflow-hidden border border-[#1B2536] aspect-[16/9] bg-slate-900 group">
-                    <img 
-                      src="/incident-map-thumb.jpg" 
+                    <img
+                      src="/clean-map-terrain.jpg"
                       alt="Map Location"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/fences-intrusion-map.jpg';
+                        (e.target as HTMLImageElement).src = '/clean-map-terrain.jpg';
                       }}
                     />
-                    
+
                     {/* Crosshair Overlay */}
                     <div className="absolute inset-0 bg-cyan-950/20 pointer-events-none flex items-center justify-center">
                       <Crosshair className="w-10 h-10 text-red-500 animate-pulse" />
@@ -646,8 +808,9 @@ export function IncidentsPage() {
 
                 <div className="mt-3 pt-3 border-t border-[#1B2536] flex items-center justify-between font-mono text-xs">
                   <span className="text-slate-400">Tactical GIS Layer: <strong>Armed Perimeter</strong></span>
-                  <button 
-                    onClick={() => alert('Navigating to Live Tactical Map...')}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/map')}
                     className="flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 font-bold"
                   >
                     Open in Map <ArrowRight className="w-3.5 h-3.5" />
@@ -696,7 +859,7 @@ export function IncidentsPage() {
                     onChange={(e) => setNewNote(e.target.value)}
                     className="flex-1 bg-[#070B12] border border-[#1B2536] rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500"
                   />
-                  <button 
+                  <button
                     type="submit"
                     className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-[#1E293B] text-cyan-400 font-bold text-xs rounded-lg transition-colors flex items-center gap-1"
                   >
@@ -708,8 +871,98 @@ export function IncidentsPage() {
 
             </div>
           </div>
+          ) : (
+            <div className="p-4 min-w-0 space-y-4">
+              {activeTab === 'Evidence' && (
+                <section className="rounded-xl border border-[#1B2536] bg-[#0A0F18] p-4 space-y-4" aria-labelledby="incident-evidence-title">
+                  <div>
+                    <h3 id="incident-evidence-title" className="text-sm font-bold text-white">Evidence linked to {selectedIncident.id}</h3>
+                    <p className="mt-1 text-xs text-slate-400">Evidence records are listed in this local case file.</p>
+                  </div>
+                  {selectedIncident.evidence.length ? (
+                    <ul className="divide-y divide-[#1B2536] rounded-lg border border-[#1B2536]">
+                      {selectedIncident.evidence.map(item => <li key={item} className="flex items-center gap-2 px-3 py-2.5 text-xs text-slate-200"><Paperclip className="h-4 w-4 text-cyan-400" />{item}</li>)}
+                    </ul>
+                  ) : <p className="rounded-lg border border-dashed border-slate-700 p-6 text-center text-xs text-slate-400">No evidence is attached to this incident.</p>}
+                  <button type="button" onClick={downloadDossier} className="rounded-lg bg-cyan-600 px-3 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-500">Download case dossier</button>
+                </section>
+              )}
+
+              {activeTab === 'Timeline' && (
+                <section className="rounded-xl border border-[#1B2536] bg-[#0A0F18] p-4" aria-labelledby="incident-timeline-title">
+                  <h3 id="incident-timeline-title" className="mb-3 text-sm font-bold text-white">Incident timeline</h3>
+                  <ol className="space-y-2">
+                    {selectedIncident.timeline.map(event => <li key={event.id} className="flex gap-3 rounded-lg border border-[#1B2536] bg-[#070B12] p-3 text-xs"><time className="shrink-0 font-mono text-cyan-400">{event.time}</time><div><div className="font-semibold text-slate-100">{event.action}</div><p className="mt-1 text-slate-400">{event.details}</p></div></li>)}
+                  </ol>
+                </section>
+              )}
+
+              {activeTab === 'Actions' && (
+                <section className="rounded-xl border border-[#1B2536] bg-[#0A0F18] p-4 space-y-3" aria-labelledby="incident-actions-title">
+                  <h3 id="incident-actions-title" className="text-sm font-bold text-white">Incident actions</h3>
+                  <p className="text-xs text-slate-400">Actions update this case and add an entry to its timeline.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => updateSelectedIncident({ status: 'Investigating' }, 'Incident Acknowledged', 'An operator acknowledged this incident.', 'ACK')} className="rounded-lg bg-cyan-600 px-3 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-500">Acknowledge</button>
+                    <button type="button" onClick={() => updateSelectedIncident({ status: 'Assigned', assignedTo: 'Patrol Charlie' }, 'Patrol Dispatched', `Patrol Charlie assigned to ${selectedIncident.location}.`, 'DISPATCH')} className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-500">Dispatch Patrol</button>
+                    <button type="button" onClick={downloadDossier} className="rounded-lg border border-[#1E293B] bg-[#070B12] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-800">Download dossier</button>
+                    <button type="button" onClick={() => navigate('/map')} className="rounded-lg border border-[#1E293B] bg-[#070B12] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-800">Open operational map</button>
+                  </div>
+                </section>
+              )}
+
+              {activeTab === 'Related Events' && (
+                <section className="rounded-xl border border-[#1B2536] bg-[#0A0F18] p-4 space-y-3" aria-labelledby="incident-related-title">
+                  <h3 id="incident-related-title" className="text-sm font-bold text-white">Related alerts</h3>
+                  {selectedIncident.alerts.length ? <ul className="space-y-2">{selectedIncident.alerts.map(alertId => <li key={alertId} className="flex items-center justify-between rounded-lg border border-[#1B2536] bg-[#070B12] px-3 py-2 text-xs"><span className="font-mono text-cyan-300">{alertId}</span><button type="button" onClick={() => navigate('/alerts')} className="text-cyan-400 hover:text-cyan-300">Open alerts</button></li>)}</ul> : <p className="rounded-lg border border-dashed border-slate-700 p-6 text-center text-xs text-slate-400">No related alerts are linked to this incident.</p>}
+                </section>
+              )}
+
+              {activeTab === 'Audit Log' && (
+                <section className="rounded-xl border border-[#1B2536] bg-[#0A0F18] p-4 space-y-4" aria-labelledby="incident-audit-title">
+                  <h3 id="incident-audit-title" className="text-sm font-bold text-white">Case audit log</h3>
+                  <ol className="space-y-2">{selectedIncident.timeline.map(event => <li key={event.id} className="grid gap-1 rounded-lg border border-[#1B2536] bg-[#070B12] p-3 text-xs sm:grid-cols-[7rem_1fr]"><time className="font-mono text-slate-500">{event.time}</time><div><strong className="text-slate-200">{event.action}</strong><p className="mt-1 text-slate-400">{event.details}</p></div></li>)}</ol>
+                  {selectedIncident.notes.length > 0 && <div><h4 className="mb-2 text-xs font-semibold text-slate-300">Operator notes</h4><ul className="space-y-2">{selectedIncident.notes.map(note => <li key={note.id} className="rounded-lg border border-[#1B2536] bg-[#070B12] p-3 text-xs"><p className="text-slate-200">{note.text}</p><p className="mt-1 text-slate-500">{note.user} · {note.time}</p></li>)}</ul></div>}
+                </section>
+              )}
+            </div>
+          )}
         </div>
       </div>
+      {showCreateIncident && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowCreateIncident(false); }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="create-incident-title" className="my-auto max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-cyan-500/30 bg-[#0A0F18] p-5 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div><h2 id="create-incident-title" className="text-base font-bold text-white">Create incident</h2><p className="mt-1 text-xs text-slate-400">Add a case to the local incident workspace.</p></div>
+              <button type="button" onClick={() => setShowCreateIncident(false)} className="rounded-md px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close create incident dialog">×</button>
+            </div>
+            <form onSubmit={handleCreateIncident} className="space-y-4">
+              <label className="block space-y-1.5 text-xs font-semibold text-slate-300">Incident title
+                <input autoFocus required maxLength={100} value={newIncidentTitle} onChange={event => setNewIncidentTitle(event.target.value)} className="w-full rounded-lg border border-[#1E293B] bg-[#070B12] px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500" placeholder="Describe the incident" />
+              </label>
+              <label className="block space-y-1.5 text-xs font-semibold text-slate-300">Location
+                <input required maxLength={120} value={newIncidentLocation} onChange={event => setNewIncidentLocation(event.target.value)} className="w-full rounded-lg border border-[#1E293B] bg-[#070B12] px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500" placeholder="Sector and location" />
+              </label>
+              <label className="block space-y-1.5 text-xs font-semibold text-slate-300">Severity
+                <select value={newIncidentSeverity} onChange={event => setNewIncidentSeverity(event.target.value as Incident['severity'])} className="w-full rounded-lg border border-[#1E293B] bg-[#070B12] px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-500">
+                  <option value="CRITICAL">Critical</option><option value="HIGH">High</option><option value="MEDIUM">Medium</option><option value="LOW">Low</option>
+                </select>
+              </label>
+              <div className="flex flex-col-reverse gap-2 border-t border-[#1B2536] pt-4 sm:flex-row sm:justify-end">
+                <button type="button" onClick={() => setShowCreateIncident(false)} className="rounded-lg border border-[#1E293B] px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800">Cancel</button>
+                <button type="submit" className="rounded-lg bg-cyan-600 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-500">Create incident</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+      {feedExpanded && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" role="dialog" aria-modal="true" aria-label="Incident image preview" onMouseDown={(event) => { if (event.target === event.currentTarget) setFeedExpanded(false); }}>
+          <div className="relative w-full max-w-6xl overflow-hidden rounded-xl border border-[#1E293B] bg-[#0A0F18]">
+            <button type="button" onClick={() => setFeedExpanded(false)} className="absolute right-3 top-3 z-10 rounded-lg border border-white/20 bg-black/70 px-3 py-2 text-sm text-white hover:bg-black" aria-label="Close image preview">Close</button>
+            <img src={feedImage} alt={`${selectedIncident.id} camera image`} className="max-h-[85dvh] w-full object-contain" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

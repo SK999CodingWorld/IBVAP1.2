@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from typing import List, Dict
 
-router = APIRouter(prefix="/api/map", tags=["map"])
+router = APIRouter(prefix="/map", tags=["map"])
 
 @router.get("/cameras")
 async def get_map_cameras():

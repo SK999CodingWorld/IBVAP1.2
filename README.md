@@ -50,46 +50,28 @@ A production-ready AI-powered video analytics platform for border surveillance, 
 ## Project Structure
 
 ```
-ibvap-project/
-├── main.py                 # FastAPI application entry point
-├── run.py                  # Development runner (api/detector/tracker/docker)
-├── docker-compose.yml      # Full stack deployment
-├── Dockerfile              # API container
-├── Dockerfile.detector     # GPU detection worker
-├── requirements.txt        # Python dependencies
-├── zones.json              # Zone configurations
-├── .env.example            # Environment template
-├── TECH_DESIGN.md          # Technical design document
-│
-├── services/               # Microservices
-│   ├── stream_ingest/      # Camera management + FFmpeg ingestion
-│   ├── detection_worker/   # YOLOv8 inference (GPU)
-│   ├── tracking_service/   # BoT-SORT tracking + zone logic
-│   ├── alert_engine/       # Rule-based alerting
-│   └── camera_registry/    # Camera CRUD + persistence
-│
-├── shared/                 # Shared libraries
-│   ├── schemas/            # Pydantic models (Camera, Detection, Track, Alert, Zone, Event)
-│   ├── messaging/          # Redis Streams + PubSub
-│   ├── config/             # Pydantic Settings
-│   └── utils/              # Vision helpers (drawing, geometry, NMS)
-│
-├── models/
-│   ├── weights/            # Model files (.pt, .onnx, .engine)
-│   └── export/             # Export scripts (PyTorch → ONNX → TensorRT)
-│
-├── tests/
-│   ├── unit/               # Unit tests
-│   ├── integration/        # Integration tests
-│   └── fixtures/           # Test videos, expected outputs
-│
-├── deploy/                 # Deployment configs
-│   ├── kubernetes/         # K3s manifests
-│   ├── ansible/            # Edge provisioning
-│   └── scripts/            # install.sh, backup.sh
-│
-└── dashboard/              # React + TypeScript + Vite (planned)
+backend/app/
+├── api/                 # Resource routers; api/v1 is the central route registry
+├── core/                # Settings, database, cache, middleware, and errors
+├── models/              # Persistence models
+├── schemas/             # Request and response schemas
+├── services/            # Business workflows and domain services
+└── ai/                  # Computer vision and stream processing
+
+frontend/src/
+├── api/                 # Shared clients and domain endpoint services
+├── components/          # Shared primitives and product-area UI
+├── config/              # Validated public frontend configuration
+├── features/            # UI-independent domain rules and workflows
+├── layouts/             # Shared page chrome
+├── lib/                 # Cross-cutting utilities
+├── pages/               # Route-level screens
+├── stores/              # Shared client state (Zustand)
+└── types/               # Shared frontend contracts
 ```
+
+See [the architecture guide](docs/ARCHITECTURE.md) for ownership boundaries,
+configuration, API versioning, and extension conventions.
 
 ## Quick Start
 
@@ -104,49 +86,45 @@ ibvap-project/
 git clone <repo>
 cd ibvap-project
 
-# Create virtual environment
+# Create and activate a virtual environment
 python -m venv .venv
 source .venv/bin/activate  # Linux/macOS
-# .venv\Scripts\activate   # Windows
+# .venv\Scripts\Activate.ps1  # Windows PowerShell
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Copy environment config
+# Copy backend environment config to the project root
 cp .env.example .env
-# Edit .env with your settings
+# Windows PowerShell: Copy-Item .env.example .env
 ```
 
 ### Running
 
-**Option 1: All-in-one (development)**
+**Local application**
 ```bash
-python run.py api --reload
-# Opens http://localhost:8000/docs for API docs
+python run.py
+# Dashboard: http://localhost:8001
+# API docs: http://localhost:8001/docs
 ```
 
-**Option 2: Microservices (production-like)**
+**Build the frontend before starting the local app**
 ```bash
-# Terminal 1: Stream ingestion + API
-python run.py api
-
-# Terminal 2: Detection worker (GPU)
-python run.py detector
-
-# Terminal 3: Tracking service
-python run.py tracker
+cd frontend
+npm ci
+npm run build
+cd ..
+python run.py
 ```
 
-**Option 3: Docker Compose (recommended for deployment)**
-```bash
-docker-compose up --build -d
-# API at http://localhost:8000
-```
+For container deployment, use `Dockerfile.prod` and `docker-compose.prod.yml`.
+The older root `docker-compose.yml` still describes separate worker services.
+For Vite hot reload, run the backend in one terminal and `npm run dev` in `frontend/` in another.
 
 ### Adding Cameras
 
 ```bash
-curl -X POST http://localhost:8000/cameras \
+curl -X POST http://localhost:8001/api/v1/cameras \
   -H "Content-Type: application/json" \
   -d '{
     "name": "BOP-North-Gate",
@@ -182,21 +160,21 @@ Zone types: `polygon`, `rectangle`, `line`, `circle`
 
 ## API Endpoints
 
+Use `/api/v1` as the API base path. Existing `/api/...` clients continue to work during migration.
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/health` | System health check |
-| POST | `/cameras` | Add camera |
-| GET | `/cameras` | List cameras |
-| GET | `/cameras/{id}` | Get camera |
-| PATCH | `/cameras/{id}` | Update camera |
-| DELETE | `/cameras/{id}` | Delete camera |
-| GET | `/cameras/{id}/health` | Camera health |
-| POST | `/alerts/rules` | Create alert rule |
-| GET | `/alerts/rules` | List alert rules |
-| GET | `/alerts` | Get recent alerts |
-| POST | `/alerts/{id}/acknowledge` | Acknowledge alert |
+| POST | `/api/v1/cameras` | Add camera |
+| GET | `/api/v1/cameras` | List cameras |
+| GET | `/api/v1/cameras/{id}` | Get camera |
+| PATCH | `/api/v1/cameras/{id}` | Update camera |
+| DELETE | `/api/v1/cameras/{id}` | Delete camera |
+| GET | `/api/v1/cameras/{id}/health` | Camera health |
+| GET | `/api/v1/alerts` | Get recent alerts |
+| POST | `/api/v1/alerts/{id}/acknowledge` | Acknowledge alert |
 
-Full OpenAPI docs at `http://localhost:8000/docs`
+Full OpenAPI docs at `http://localhost:8001/docs`
 
 ## Configuration
 

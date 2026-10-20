@@ -8,7 +8,15 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - PYTHONUNBUFFERED=1
+      ENVIRONMENT: production
+      DEMO_MODE: 'false'
+      DB_SSL: 'true'
+      ENABLE_BACKGROUND_WORKERS: 'false'
+      PYTHONUNBUFFERED: '1'
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL to the Supabase Postgres connection string}
+      SECRET_KEY: ${SECRET_KEY:?Set a unique 32+ character SECRET_KEY}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:?Set a unique 32+ character WEBHOOK_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS:?Set a JSON array containing your Vercel HTTPS origin}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]

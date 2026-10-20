@@ -29,14 +29,14 @@ def _save_zones(zones: List[Dict[str, Any]]) -> bool:
         return False
 
 
-@router.get("/api/zones")
+@router.get("/zones")
 async def list_zones():
     """Returns all active virtual fence zones and restricted polygons"""
     zones = _load_zones()
     return {"status": "success", "count": len(zones), "data": zones}
 
 
-@router.get("/api/zones/{id}")
+@router.get("/zones/{id}")
 async def get_zone(id: str):
     """Returns specific virtual zone by ID"""
     zones = _load_zones()
@@ -46,7 +46,7 @@ async def get_zone(id: str):
     raise HTTPException(404, f"Zone {id} not found")
 
 
-@router.post("/api/zones")
+@router.post("/zones")
 async def create_zone(zone_data: Dict[str, Any] = Body(...)):
     """Creates a new virtual perimeter zone / polygon fence"""
     zones = _load_zones()
@@ -70,7 +70,7 @@ async def create_zone(zone_data: Dict[str, Any] = Body(...)):
     return {"status": "success", "message": "Zone created successfully", "data": zone_entry}
 
 
-@router.put("/api/zones/{id}")
+@router.put("/zones/{id}")
 async def update_zone(id: str, updates: Dict[str, Any] = Body(...)):
     """Updates an existing virtual fence polygon or coordinates"""
     zones = _load_zones()
@@ -88,7 +88,7 @@ async def update_zone(id: str, updates: Dict[str, Any] = Body(...)):
     raise HTTPException(404, f"Zone {id} not found")
 
 
-@router.delete("/api/zones/{id}")
+@router.delete("/zones/{id}")
 async def delete_zone(id: str):
     """Deletes a virtual fence zone"""
     zones = _load_zones()
@@ -99,7 +99,8 @@ async def delete_zone(id: str):
     return {"status": "success", "message": f"Zone {id} deleted"}
 
 
-@router.post("/api/zones/{id}/toggle")
+@router.post("/zones/{id}/toggle")
+@router.put("/zones/{id}/toggle")
 async def toggle_zone(id: str):
     """Toggles active state of a virtual fence zone"""
     zones = _load_zones()
@@ -115,7 +116,7 @@ async def toggle_zone(id: str):
     raise HTTPException(404, f"Zone {id} not found")
 
 
-@router.get("/api/zones/{id}/events")
+@router.get("/zones/{id}/events")
 async def get_zone_events(id: str):
     """Returns recent intrusion violations for a given zone"""
     return {

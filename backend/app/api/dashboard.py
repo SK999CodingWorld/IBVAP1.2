@@ -15,7 +15,7 @@ from app.schemas.dashboard import DashboardKPIs
 from app.schemas.alert import AlertResponse
 from app.schemas.event import DetectionResponse
 
-router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 @router.get("/kpis", response_model=DashboardKPIs)
 async def get_kpis(
@@ -26,21 +26,21 @@ async def get_kpis(
     cameras = (await db.execute(select(Camera))).scalars().all()
     cameras_online = sum(1 for c in cameras if c.status == "online")
     cameras_offline = len(cameras) - cameras_online
-    
+
     # Active alerts
     alerts_query = select(Alert).where(Alert.status.in_(["new", "investigating", "escalated"]))
     active_alerts = len((await db.execute(alerts_query)).scalars().all())
-    
+
     # Critical incidents
     incidents_query = select(Incident).where(Incident.severity == "critical", Incident.status != "resolved")
     critical_incidents = len((await db.execute(incidents_query)).scalars().all())
-    
+
     # Randomly approximated stats for demo or query if small
     people_detected = 1245
     vehicles_detected = 389
     anpr_reads = 150
     restricted_zone_events = 42
-    
+
     return DashboardKPIs(
         cameras_online=cameras_online,
         cameras_offline=cameras_offline,

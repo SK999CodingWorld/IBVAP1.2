@@ -5,7 +5,7 @@
     "dockerfilePath": "Dockerfile.prod"
   },
   "deploy": {
-    "startCommand": "python simple_dashboard.py",
+    "startCommand": "python run.py",
     "healthcheckPath": "/",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",

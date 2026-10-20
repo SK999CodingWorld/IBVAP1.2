@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useVideoStore, PRESET_VIDEOS } from '@/stores/videoStore';
-import { X, Upload, Video, Camera, Globe, Check, Play, AlertCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { PRESET_VIDEOS,useVideoStore } from '@/stores/videoStore';
+import { AlertCircle,Camera,Check,Globe,Sparkles,Upload,Video,X } from 'lucide-react';
+import React,{ useEffect,useRef,useState } from 'react';
 
 const CAMERAS = [
   { id: 'BOP-01', name: 'Border Outpost 1 PTZ' },
@@ -18,7 +18,7 @@ export const VideoSourceModal: React.FC = () => {
   const { videoModalOpen, selectedCameraForModal, closeVideoModal, setVideoSource, cameraConfigs } = useVideoStore();
   const [targetCamera, setTargetCamera] = useState(selectedCameraForModal);
   const [activeTab, setActiveTab] = useState<'presets' | 'upload' | 'webcam' | 'url'>('presets');
-  
+
   // File Upload State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
@@ -30,6 +30,7 @@ export const VideoSourceModal: React.FC = () => {
   // Webcam State
   const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
   const [webcamError, setWebcamError] = useState<string | null>(null);
+  const [sourceError, setSourceError] = useState<string | null>(null);
   const webcamVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -65,11 +66,6 @@ export const VideoSourceModal: React.FC = () => {
   };
 
   const handleApplyPreset = (preset: typeof PRESET_VIDEOS[0]) => {
-    fetch('/api/stream/source', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: 'test.mp4' })
-    }).catch(() => {});
     setVideoSource(targetCamera, 'preset', preset.url, preset.name);
     closeVideoModal();
   };
@@ -88,17 +84,20 @@ export const VideoSourceModal: React.FC = () => {
   };
 
   const handleApplyWebcam = () => {
-    fetch('/api/stream/source', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source: 'webcam' })
-    }).catch(() => {});
     setVideoSource(targetCamera, 'webcam', '/video_feed', 'Live Physical Webcam');
     closeVideoModal();
   };
 
   const handleApplyUrl = () => {
+    setSourceError(null);
     if (customUrl.trim()) {
+      try {
+        const parsedUrl = new URL(customUrl.trim());
+        if (!['http:', 'https:', 'rtsp:'].includes(parsedUrl.protocol)) throw new Error('Use an http, https, or rtsp stream URL.');
+      } catch (error) {
+        setSourceError(error instanceof Error ? error.message : 'Enter a valid stream URL.');
+        return;
+      }
       setVideoSource(targetCamera, 'url', customUrl.trim(), 'External Stream');
       closeVideoModal();
     }
@@ -107,6 +106,7 @@ export const VideoSourceModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-slate-900 border border-slate-700 rounded-xl max-w-2xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        {sourceError && <div role="alert" className="m-4 mb-0 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{sourceError}</div>}
         {/* Modal Header */}
         <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-950/60">
           <div>
@@ -118,7 +118,7 @@ export const VideoSourceModal: React.FC = () => {
               Upload footage, connect your webcam, or choose high-fidelity surveillance clips with active AI overlays.
             </p>
           </div>
-          <button 
+          <button
             onClick={closeVideoModal}
             className="p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
           >
@@ -129,8 +129,8 @@ export const VideoSourceModal: React.FC = () => {
         {/* Camera Selector */}
         <div className="px-5 py-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
           <label className="text-xs font-semibold text-slate-300">Target Channel:</label>
-          <select 
-            value={targetCamera} 
+          <select
+            value={targetCamera}
             onChange={(e) => setTargetCamera(e.target.value)}
             className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-cyan-300 font-mono focus:ring-1 focus:ring-cyan-500 focus:outline-none"
           >
@@ -145,8 +145,8 @@ export const VideoSourceModal: React.FC = () => {
           <button
             onClick={() => setActiveTab('presets')}
             className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-all ${
-              activeTab === 'presets' 
-                ? 'border-cyan-400 text-cyan-400' 
+              activeTab === 'presets'
+                ? 'border-cyan-400 text-cyan-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -155,8 +155,8 @@ export const VideoSourceModal: React.FC = () => {
           <button
             onClick={() => setActiveTab('upload')}
             className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-all ${
-              activeTab === 'upload' 
-                ? 'border-cyan-400 text-cyan-400' 
+              activeTab === 'upload'
+                ? 'border-cyan-400 text-cyan-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -165,8 +165,8 @@ export const VideoSourceModal: React.FC = () => {
           <button
             onClick={() => setActiveTab('webcam')}
             className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-all ${
-              activeTab === 'webcam' 
-                ? 'border-cyan-400 text-cyan-400' 
+              activeTab === 'webcam'
+                ? 'border-cyan-400 text-cyan-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -175,8 +175,8 @@ export const VideoSourceModal: React.FC = () => {
           <button
             onClick={() => setActiveTab('url')}
             className={`pb-2.5 px-3 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-all ${
-              activeTab === 'url' 
-                ? 'border-cyan-400 text-cyan-400' 
+              activeTab === 'url'
+                ? 'border-cyan-400 text-cyan-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -186,7 +186,7 @@ export const VideoSourceModal: React.FC = () => {
 
         {/* Tab Content */}
         <div className="p-5 overflow-y-auto flex-1 space-y-4">
-          
+
           {/* TAB 1: PRESETS */}
           {activeTab === 'presets' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -196,8 +196,8 @@ export const VideoSourceModal: React.FC = () => {
                   <div
                     key={preset.id}
                     className={`border rounded-lg p-3.5 flex flex-col justify-between transition-all cursor-pointer ${
-                      isSelected 
-                        ? 'border-cyan-500 bg-cyan-950/20 shadow-lg shadow-cyan-900/10' 
+                      isSelected
+                        ? 'border-cyan-500 bg-cyan-950/20 shadow-lg shadow-cyan-900/10'
                         : 'border-slate-800 bg-slate-950/50 hover:border-slate-700 hover:bg-slate-800/40'
                     }`}
                     onClick={() => handleApplyPreset(preset)}
@@ -232,16 +232,16 @@ export const VideoSourceModal: React.FC = () => {
           {/* TAB 2: UPLOAD */}
           {activeTab === 'upload' && (
             <div className="space-y-4">
-              <div 
+              <div
                 onClick={() => fileInputRef.current?.click()}
                 className="border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-xl p-8 text-center cursor-pointer transition-all bg-slate-950/40 hover:bg-slate-950/80 group"
               >
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileSelect} 
-                  accept="video/mp4,video/webm,video/ogg,video/quicktime" 
-                  className="hidden" 
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                  className="hidden"
                 />
                 <Upload className="w-10 h-10 text-slate-500 group-hover:text-cyan-400 mx-auto mb-3 transition-colors" />
                 <h4 className="text-sm font-semibold text-slate-200">
@@ -311,9 +311,9 @@ export const VideoSourceModal: React.FC = () => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-slate-300">RTSP / HLS / MP4 Stream URL:</label>
-                <input 
-                  type="text" 
-                  value={customUrl} 
+                <input
+                  type="text"
+                  value={customUrl}
                   onChange={(e) => setCustomUrl(e.target.value)}
                   placeholder="rtsp://admin:pass@192.168.1.100:554/stream1 or https://.../video.mp4"
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 font-mono focus:ring-1 focus:ring-cyan-500 focus:outline-none"

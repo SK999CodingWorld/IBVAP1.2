@@ -1,23 +1,28 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Card, CardContent } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { StatusIndicator } from '@/components/ui/StatusIndicator';
-import { 
-  Camera, AlertTriangle, Users, CarFront, Shield, 
-  Activity, BarChart3, AlertCircle, Bell, HeartPulse,
-  Monitor, Wifi, Cpu, TrendingUp, TrendingDown, Minus,
-  MapPin, Clock, Eye, Video, CheckCircle2, Flame, RefreshCw, Upload,
-  Maximize2, Radio, Layers, Check, Send, Volume2, VolumeX, X, Zap,
-  Crosshair, ShieldAlert, Sparkles
-} from 'lucide-react';
-import { formatTime } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
-import { VideoSourceModal } from '@/components/surveillance/VideoSourceModal';
-import { VideoInspectionModal } from '@/components/surveillance/VideoInspectionModal';
+import { dashboardService,streamService } from '@/api';
+import { getAuthenticatedMediaUrl, getAuthenticatedWebSocket } from '@/api/client';
 import { ObjectInspectorModal } from '@/components/surveillance/ObjectInspectorModal';
+import { VideoInspectionModal } from '@/components/surveillance/VideoInspectionModal';
+import { VideoSourceModal } from '@/components/surveillance/VideoSourceModal';
 import { ZoneSetupModal } from '@/components/surveillance/ZoneSetupModal';
-import { useVideoStore, BoundingBox } from '@/stores/videoStore';
 import { Button } from '@/components/ui/Button';
+import { BoundingBox,useVideoStore } from '@/stores/videoStore';
+import {
+  AlertTriangle,
+  Bell,
+  Camera,
+  Check,
+  CheckCircle2,
+  Clock,Eye,
+  Flame,
+  HeartPulse,
+  Maximize2,
+  Shield,
+  Upload,
+  Users,
+  Volume2,VolumeX,X,Zap
+} from 'lucide-react';
+import React,{ useCallback,useEffect,useRef,useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface AlertItem {
   id: string;
@@ -48,58 +53,58 @@ interface DashboardKpiData {
 }
 
 const INITIAL_ALERTS: AlertItem[] = [
-  { 
-    id: 'ALT-8000', 
-    severity: 'high', 
-    type: 'Car Perimeter Intrusion (ID #815)', 
-    camera: 'BOP-01', 
-    location: 'Sector 4 Red Perimeter', 
-    time: '12:14:57', 
-    confidence: '43.2', 
-    riskScore: 72, 
-    object: 'VEHICLE', 
+  {
+    id: 'ALT-8000',
+    severity: 'high',
+    type: 'Car Perimeter Intrusion (ID #815)',
+    camera: 'BOP-01',
+    location: 'Sector 4 Red Perimeter',
+    time: '12:14:57',
+    confidence: '43.2',
+    riskScore: 72,
+    object: 'VEHICLE',
     trackingId: '815',
     acknowledged: false,
     dispatched: false
   },
-  { 
-    id: 'ALT-8001', 
-    severity: 'medium', 
-    type: 'Loitering Detected: Person #835 stationary for 4.6s', 
-    camera: 'BOP-01', 
-    location: 'Perimeter Surveillance', 
-    time: '12:15:12', 
-    confidence: '92', 
-    riskScore: 72, 
-    object: 'PERSON', 
+  {
+    id: 'ALT-8001',
+    severity: 'medium',
+    type: 'Loitering Detected: Person #835 stationary for 4.6s',
+    camera: 'BOP-01',
+    location: 'Perimeter Surveillance',
+    time: '12:15:12',
+    confidence: '92',
+    riskScore: 72,
+    object: 'PERSON',
     trackingId: '835',
     acknowledged: false,
     dispatched: false
   },
-  { 
-    id: 'ALT-8002', 
-    severity: 'critical', 
-    type: 'Restricted Boundary Cross (ID #104)', 
-    camera: 'BOP-01', 
-    location: 'Sector 4 Red Zone Alpha', 
-    time: '12:10:45', 
-    confidence: '96.4%', 
-    riskScore: 88, 
-    object: 'PERSON', 
+  {
+    id: 'ALT-8002',
+    severity: 'critical',
+    type: 'Restricted Boundary Cross (ID #104)',
+    camera: 'BOP-01',
+    location: 'Sector 4 Red Zone Alpha',
+    time: '12:10:45',
+    confidence: '96.4%',
+    riskScore: 88,
+    object: 'PERSON',
     trackingId: '104',
     acknowledged: false,
     dispatched: false
   },
-  { 
-    id: 'ALT-8003', 
-    severity: 'high', 
-    type: 'Unregistered Convoy Velocity Spike', 
-    camera: 'CHECK-01', 
-    location: 'Highway 1 Access Lane', 
-    time: '12:08:12', 
-    confidence: '98.2%', 
-    riskScore: 65, 
-    object: 'VEHICLE', 
+  {
+    id: 'ALT-8003',
+    severity: 'high',
+    type: 'Unregistered Convoy Velocity Spike',
+    camera: 'CHECK-01',
+    location: 'Highway 1 Access Lane',
+    time: '12:08:12',
+    confidence: '98.2%',
+    riskScore: 65,
+    object: 'VEHICLE',
     trackingId: '21',
     acknowledged: false,
     dispatched: false
@@ -110,12 +115,11 @@ export const CommandCenter: React.FC = () => {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date().toISOString());
   const [liveAlerts, setLiveAlerts] = useState<AlertItem[]>(INITIAL_ALERTS);
-  const [streamHealthy, setStreamHealthy] = useState(true);
   const [isZoneModalOpen, setIsZoneModalOpen] = useState(false);
-  
+
   // Stream Mode: 'tactical' (high-res synthetic HUD), 'mjpeg' (real-time live worker stream), 'heatmap' (density stream)
   const [streamMode, setStreamMode] = useState<'tactical' | 'mjpeg' | 'heatmap'>('tactical');
-  const [activeCameraId, setActiveCameraId] = useState<string>('BOP-01');
+  const [activeCameraId] = useState<string>('BOP-01');
   const [isSirenArmed, setIsSirenArmed] = useState(true);
   const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warn' } | null>(null);
 
@@ -153,7 +157,7 @@ export const CommandCenter: React.FC = () => {
   // Fetch live KPIs from backend
   const fetchKpis = useCallback(async () => {
     try {
-      const res = await fetch('/api/dashboard/kpis');
+      const res = await dashboardService.getKPIs();
       if (res.ok) {
         const data = await res.json();
         setKpis(prev => ({
@@ -181,11 +185,8 @@ export const CommandCenter: React.FC = () => {
     // 1. Try WebSocket connection for real-time alerts
     let ws: WebSocket | null = null;
     try {
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${wsProtocol}//${window.location.host}/ws/alerts`;
-      ws = new WebSocket(wsUrl);
-
-      ws.onmessage = (event) => {
+      ws = getAuthenticatedWebSocket('/ws/alerts');
+      if (ws) ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           const newAlert: AlertItem = {
@@ -213,10 +214,10 @@ export const CommandCenter: React.FC = () => {
       console.warn('WebSocket fallback to HTTP polling:', e);
     }
 
-    // 2. Periodic HTTP fetch fallback from /api/stream/alerts
+    // 2. Periodic HTTP fetch fallback from /api/v1/stream/alerts
     const pollInterval = setInterval(async () => {
       try {
-        const res = await fetch('/api/stream/alerts');
+        const res = await streamService.getAlerts();
         if (res.ok) {
           const alertsData = await res.json();
           if (Array.isArray(alertsData) && alertsData.length > 0 && isMounted) {
@@ -274,7 +275,7 @@ export const CommandCenter: React.FC = () => {
   };
 
   // Click on recent target detection -> Opens Object Inspector Modal
-  const handleInspectRecentDetection = (targetId: string, type: 'PERSON' | 'VEHICLE' | 'ANIMAL', camera: string, confStr: string, zone: string) => {
+  const handleInspectRecentDetection = (targetId: string, type: 'PERSON' | 'VEHICLE' | 'ANIMAL', confStr: string, zone: string) => {
     const numericConf = parseFloat(confStr) || 95.0;
     const targetBox: BoundingBox = {
       id: `box-${targetId}`,
@@ -302,7 +303,7 @@ export const CommandCenter: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-[#060b13] text-slate-200 overflow-y-auto p-3.5 md:p-4 space-y-3.5 font-sans custom-scrollbar relative">
-      
+
       {/* Floating Tactical Toast */}
       {activeToast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-[#0a121e] border border-cyan-500/60 text-white shadow-2xl shadow-cyan-950/70 font-mono text-xs animate-in slide-in-from-bottom-5">
@@ -321,18 +322,18 @@ export const CommandCenter: React.FC = () => {
 
       {/* ── ROW 1: TOP SECTION (BANNER + VIDEO STREAM ON LEFT, LIVE THREAT FEED ON RIGHT) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch">
-        
+
         {/* LEFT COLUMN: 8 cols (Operations Banner + Live Surveillance Video) */}
         <div className="lg:col-span-8 flex flex-col space-y-3">
-          
-          {/* 1. TOP OPERATIONAL BANNER WITH SOLDIER GRAPHIC */}
-          <div 
-            className="relative flex flex-wrap justify-between items-center gap-3 bg-[#0a121e] border border-[#1b2b40] p-3 sm:p-3.5 rounded-xl shadow-xl overflow-hidden"
+
+          {/* 1. TOP OPERATIONAL BANNER WITH BORDER OUTPOST PANORAMA */}
+          <div
+            className="relative isolate flex min-h-[82px] flex-wrap justify-between items-center gap-3 bg-[#0a121e] border border-[#1b2b40] p-3 sm:p-3.5 rounded-xl shadow-xl overflow-hidden"
             style={{
-              backgroundImage: `linear-gradient(to right, rgba(10, 18, 30, 0.98) 55%, rgba(10, 18, 30, 0.5) 85%, rgba(10, 18, 30, 0.25) 100%), url('/header-soldier.jpg')`,
-              backgroundPosition: 'right center',
+              backgroundImage: `linear-gradient(90deg, rgba(7, 13, 22, 0.98) 0%, rgba(7, 13, 22, 0.88) 42%, rgba(7, 13, 22, 0.38) 100%), url('/bg-operations.jpg')`,
+              backgroundPosition: 'center 58%',
               backgroundRepeat: 'no-repeat',
-              backgroundSize: 'contain'
+              backgroundSize: 'cover'
             }}
           >
             <div className="flex items-center space-x-3 z-10">
@@ -374,7 +375,7 @@ export const CommandCenter: React.FC = () => {
 
           {/* 2. PRIMARY LIVE SURVEILLANCE FEED CONTAINER */}
           <div className="relative bg-[#040810] rounded-xl overflow-hidden border border-[#1b2b40] shadow-2xl group flex flex-col justify-between">
-            
+
             {/* Top HUD Overlay with Stream Mode Segmented Switcher */}
             <div className="absolute top-2.5 left-3 right-3 z-20 flex justify-between items-center pointer-events-none">
               <div className="flex items-center gap-2 bg-black/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-[#1b283c] pointer-events-auto">
@@ -382,7 +383,7 @@ export const CommandCenter: React.FC = () => {
                 <span className="font-mono text-xs text-white font-bold tracking-wider">
                   CAM-01 // BOP MAIN GATE
                 </span>
-                
+
                 {/* Mode Segmented Controls */}
                 <div className="flex items-center gap-1 bg-[#060b13] p-0.5 rounded border border-[#1b2b40] ml-2 text-[10px] font-mono">
                   <button
@@ -434,7 +435,7 @@ export const CommandCenter: React.FC = () => {
                   <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> REC
                 </span>
                 <span>1080p@{kpis.ai_processing_fps.toFixed(0)}</span>
-                <button 
+                <button
                   onClick={() => openInspection(activeCameraId)}
                   className="p-1 hover:text-cyan-400 transition-colors text-slate-400"
                   title="Fullscreen Inspection"
@@ -451,17 +452,17 @@ export const CommandCenter: React.FC = () => {
             <div className="absolute bottom-2.5 right-2.5 w-3.5 h-3.5 border-b-2 border-r-2 border-cyan-500/60 pointer-events-none z-10" />
 
             {/* Video Stream Container */}
-            <div 
+            <div
               className="relative w-full aspect-[1024/409] cursor-pointer bg-black overflow-hidden flex items-center justify-center select-none"
               onClick={() => openInspection(activeCameraId)}
               title="Click for Fullscreen Camera Inspection"
             >
-              <img 
+              <img
                 src={
-                  streamMode === 'mjpeg' ? '/video_feed' :
-                  streamMode === 'heatmap' ? '/api/stream/heatmap' :
+                  streamMode === 'mjpeg' ? getAuthenticatedMediaUrl('/video_feed') :
+                  streamMode === 'heatmap' ? getAuthenticatedMediaUrl('/api/v1/stream/heatmap') :
                   '/command-center-feed.jpg'
-                } 
+                }
                 alt="IBVAP Live Tactical Video Stream"
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -493,7 +494,7 @@ export const CommandCenter: React.FC = () => {
         {/* RIGHT COLUMN: 4 cols (Live Threat Feed - Height Matches Left Stack) */}
         <div className="lg:col-span-4 flex flex-col">
           <div className="bg-[#0a121e] border border-[#1b2b40] rounded-xl p-3.5 sm:p-4 flex flex-col justify-between shadow-2xl h-full space-y-3">
-            
+
             <div className="space-y-3">
               {/* Threat Feed Header with Siren Toggle */}
               <div className="flex justify-between items-center border-b border-[#1b283c] pb-2.5">
@@ -553,7 +554,7 @@ export const CommandCenter: React.FC = () => {
                           <span className="font-mono text-xs text-slate-400">{alt.camera}</span>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-1.5">
                         <span className={`text-[9px] font-bold font-mono px-2 py-0.5 rounded ${
                           alt.acknowledged
@@ -619,16 +620,16 @@ export const CommandCenter: React.FC = () => {
 
       {/* ── ROW 2: 4 FULL-WIDTH KPI METRIC CARDS ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        
+
         {/* Cameras Online */}
-        <div 
+        <div
           onClick={() => navigate('/cameras')}
           className="relative bg-[#0a121e] border border-emerald-500/30 rounded-xl p-3.5 flex flex-col justify-between hover:border-emerald-500/70 transition-all shadow-xl overflow-hidden group cursor-pointer"
           title="Click to view Camera Registry"
         >
-          <div 
-            className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-25 transition-opacity pointer-events-none" 
-            style={{ backgroundImage: `url('/kpi-cameras-bg.jpg')` }} 
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-25 transition-opacity pointer-events-none"
+            style={{ backgroundImage: `url('/bg-surveillance.jpg')` }}
           />
           <div className="relative z-10 flex flex-col justify-between h-full space-y-2">
             <div className="flex justify-between items-start">
@@ -647,14 +648,14 @@ export const CommandCenter: React.FC = () => {
         </div>
 
         {/* Active Targets */}
-        <div 
+        <div
           onClick={() => navigate('/tracking')}
           className="relative bg-[#0a121e] border border-cyan-500/30 rounded-xl p-3.5 flex flex-col justify-between hover:border-cyan-500/70 transition-all shadow-xl overflow-hidden group cursor-pointer"
           title="Click to view Subject Tracking"
         >
-          <div 
-            className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-25 transition-opacity pointer-events-none" 
-            style={{ backgroundImage: `url('/kpi-targets-bg.jpg')` }} 
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-25 transition-opacity pointer-events-none"
+            style={{ backgroundImage: `url('/bg-traffic.jpg')` }}
           />
           <div className="relative z-10 flex flex-col justify-between h-full space-y-2">
             <div className="flex justify-between items-start">
@@ -673,14 +674,14 @@ export const CommandCenter: React.FC = () => {
         </div>
 
         {/* Critical Alerts */}
-        <div 
+        <div
           onClick={() => navigate('/alerts')}
           className="relative bg-[#0a121e] border border-red-500/30 rounded-xl p-3.5 flex flex-col justify-between hover:border-red-500/70 transition-all shadow-xl overflow-hidden group cursor-pointer"
           title="Click to view Alert Console"
         >
-          <div 
-            className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-25 transition-opacity pointer-events-none" 
-            style={{ backgroundImage: `url('/kpi-alerts-bg.jpg')` }} 
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-25 transition-opacity pointer-events-none"
+            style={{ backgroundImage: `url('/bg-operations.jpg')` }}
           />
           <div className="relative z-10 flex flex-col justify-between h-full space-y-2">
             <div className="flex justify-between items-start">
@@ -699,14 +700,14 @@ export const CommandCenter: React.FC = () => {
         </div>
 
         {/* System Health */}
-        <div 
+        <div
           onClick={() => navigate('/system-health')}
           className="relative bg-[#0a121e] border border-purple-500/30 rounded-xl p-3.5 flex flex-col justify-between hover:border-purple-500/70 transition-all shadow-xl overflow-hidden group cursor-pointer"
           title="Click to view Infrastructure Health"
         >
-          <div 
-            className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-25 transition-opacity pointer-events-none" 
-            style={{ backgroundImage: `url('/kpi-health-bg.jpg')` }} 
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-25 transition-opacity pointer-events-none"
+            style={{ backgroundImage: `url('/bg-analytics.jpg')` }}
           />
           <div className="relative z-10 flex flex-col justify-between h-full space-y-2">
             <div className="flex justify-between items-start">
@@ -738,15 +739,15 @@ export const CommandCenter: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {[
-            { id: 'TRK-104', type: 'Person', objType: 'PERSON' as const, conf: '96.4%', cam: 'BOP-01', time: '10:45:12', badge: 'RED ZONE', badgeColor: 'red', thumb: '/cc-thumb-1.png' },
-            { id: 'TRK-21', type: 'Vehicle', objType: 'VEHICLE' as const, conf: '98.2%', cam: 'CHECK-01', time: '10:42:30', badge: 'HIGHWAY', badgeColor: 'cyan', thumb: '/cc-thumb-2.png' },
-            { id: 'ANPR-89', type: 'DL 01 AB 1234', objType: 'VEHICLE' as const, conf: '98.0%', cam: 'CAM-05', time: '10:35:15', badge: 'CLEARED', badgeColor: 'emerald', thumb: '/cc-thumb-3.png' },
-            { id: 'TRK-02', type: 'Animal', objType: 'ANIMAL' as const, conf: '92.1%', cam: 'BOP-01', time: '10:30:05', badge: 'BUFFER', badgeColor: 'teal', thumb: '/cc-thumb-4.png' },
-            { id: 'TRK-112', type: 'Person', objType: 'PERSON' as const, conf: '94.8%', cam: 'BOP-02', time: '10:15:40', badge: 'PERIMETER', badgeColor: 'amber', thumb: '/cc-thumb-5.png' },
+            { id: 'TRK-104', type: 'Person', objType: 'PERSON' as const, conf: '96.4%', cam: 'BOP-01', time: '10:45:12', badge: 'RED ZONE', badgeColor: 'red', thumb: '/camera-pedestrian.jpg' },
+            { id: 'TRK-21', type: 'Vehicle', objType: 'VEHICLE' as const, conf: '98.2%', cam: 'CHECK-01', time: '10:42:30', badge: 'HIGHWAY', badgeColor: 'cyan', thumb: '/camera-vehicle.jpg' },
+            { id: 'ANPR-89', type: 'DL 01 AB 1234', objType: 'VEHICLE' as const, conf: '98.0%', cam: 'CAM-05', time: '10:35:15', badge: 'CLEARED', badgeColor: 'emerald', thumb: '/thumb-anpr-car.jpg' },
+            { id: 'TRK-02', type: 'Animal', objType: 'ANIMAL' as const, conf: '92.1%', cam: 'BOP-01', time: '10:30:05', badge: 'BUFFER', badgeColor: 'teal', thumb: '/camera-wildlife.jpg' },
+            { id: 'TRK-112', type: 'Person', objType: 'PERSON' as const, conf: '94.8%', cam: 'BOP-02', time: '10:15:40', badge: 'PERIMETER', badgeColor: 'amber', thumb: '/camera-pedestrian.jpg' },
           ].map((item, idx) => (
             <div
               key={idx}
-              onClick={() => handleInspectRecentDetection(item.id, item.objType, item.cam, item.conf, item.badge)}
+              onClick={() => handleInspectRecentDetection(item.id, item.objType, item.conf, item.badge)}
               className="bg-[#070d18] border border-[#1b283c] rounded-xl p-2.5 hover:border-cyan-500/60 cursor-pointer transition-all flex items-center justify-between gap-2.5 group hover:bg-[#0c1524] shadow-md"
               title={`Click to inspect target ${item.id} deep telemetry`}
             >
@@ -784,10 +785,13 @@ export const CommandCenter: React.FC = () => {
 
               {/* Right Column: Thumbnail */}
               <div className="w-12 h-14 rounded-lg overflow-hidden border border-[#1b283c] bg-black/60 flex-shrink-0 flex items-center justify-center group-hover:border-cyan-500/60 transition-colors">
-                <img 
-                  src={item.thumb} 
+                <img
+                  src={item.thumb}
                   alt={item.type}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/camera-pedestrian.jpg';
+                  }}
                 />
               </div>
             </div>

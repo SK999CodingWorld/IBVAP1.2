@@ -1,14 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { anprService } from '@/api';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
-import { 
-  Search, Download, Camera, Car, Activity, Eye, 
-  ShieldAlert, CheckCircle2, AlertTriangle, RefreshCw, Filter,
-  Truck, Bike, ExternalLink, Zap, Radio, X, Check, FileText,
-  Sliders, Shield, Plus, Trash2, Fuel, Award, AlertOctagon,
-  Gauge, Clock, MapPin, ChevronRight, Play, Pause
+import { Table,TableBody,TableCell,TableHead,TableHeader,TableRow } from '@/components/ui/Table';
+import {
+  Activity,
+  AlertOctagon,
+  Award,
+  Camera,Car,
+  Check,
+  CheckCircle2,
+  Download,
+  ExternalLink,
+  Eye,
+  Gauge,
+  Pause,
+  Play,
+  Plus,
+  Radio,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+  Trash2,
+  X,
+  Zap
 } from 'lucide-react';
+import { useEffect,useState } from 'react';
 
 interface ANPRRecord {
   id: string | number;
@@ -77,14 +93,14 @@ interface HotlistItem {
 }
 
 const FALLBACK_READS: ANPRRecord[] = [
-  { 
-    id: '1', 
-    plate: 'DL-01-AB-1234', 
-    type: 'CAR', 
-    camera: 'CAM-05 (Highway Lane 1)', 
-    confidence: 98.4, 
-    time: '10:45:12', 
-    speed: '48 km/h', 
+  {
+    id: '1',
+    plate: 'DL-01-AB-1234',
+    type: 'CAR',
+    camera: 'CAM-05 (Highway Lane 1)',
+    confidence: 98.4,
+    time: '10:45:12',
+    speed: '48 km/h',
     speed_kmh: 48,
     speed_status: 'NORMAL',
     status: 'CLEARED',
@@ -93,14 +109,14 @@ const FALLBACK_READS: ANPRRecord[] = [
     vehicleImg: '/thumb-anpr-car.jpg',
     zone: 'Sector 4 Red Perimeter'
   },
-  { 
-    id: '2', 
-    plate: 'UP-32-CD-5678', 
-    type: 'TRUCK', 
-    camera: 'CAM-06 (Freight Terminal)', 
-    confidence: 95.8, 
-    time: '10:42:30', 
-    speed: '34 km/h', 
+  {
+    id: '2',
+    plate: 'UP-32-CD-5678',
+    type: 'TRUCK',
+    camera: 'CAM-06 (Freight Terminal)',
+    confidence: 95.8,
+    time: '10:42:30',
+    speed: '34 km/h',
     speed_kmh: 34,
     speed_status: 'NORMAL',
     status: 'FLAGGED',
@@ -111,14 +127,14 @@ const FALLBACK_READS: ANPRRecord[] = [
     vehicleImg: '/thumb-anpr-truck.jpg',
     zone: 'Checkpoint Highway Alpha'
   },
-  { 
-    id: '3', 
-    plate: 'RJ-14-EF-9012', 
-    type: 'MOTORCYCLE', 
-    camera: 'CAM-05 (Highway Lane 1)', 
-    confidence: 88.5, 
-    time: '10:35:15', 
-    speed: '82 km/h', 
+  {
+    id: '3',
+    plate: 'RJ-14-EF-9012',
+    type: 'MOTORCYCLE',
+    camera: 'CAM-05 (Highway Lane 1)',
+    confidence: 88.5,
+    time: '10:35:15',
+    speed: '82 km/h',
     speed_kmh: 82,
     speed_status: 'OVERSPEED',
     status: 'FLAGGED',
@@ -129,14 +145,14 @@ const FALLBACK_READS: ANPRRecord[] = [
     vehicleImg: '/thumb-anpr-bike.jpg',
     zone: 'Sector 4 Red Perimeter'
   },
-  { 
-    id: '4', 
-    plate: 'MH-12-GH-3456', 
-    type: 'CAR', 
-    camera: 'CAM-06 (Freight Terminal)', 
-    confidence: 99.1, 
-    time: '10:30:05', 
-    speed: '51 km/h', 
+  {
+    id: '4',
+    plate: 'MH-12-GH-3456',
+    type: 'CAR',
+    camera: 'CAM-06 (Freight Terminal)',
+    confidence: 99.1,
+    time: '10:30:05',
+    speed: '51 km/h',
     speed_kmh: 51,
     speed_status: 'NORMAL',
     status: 'CLEARED',
@@ -162,7 +178,7 @@ export const ANPRPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'FLAGGED' | 'OVERSPEED'>('ALL');
-  
+
   // Real-time Controls
   const [isAutoSync, setIsAutoSync] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
@@ -184,7 +200,7 @@ export const ANPRPage = () => {
   // Fetch Reads from API
   const fetchReads = async () => {
     try {
-      const res = await fetch('/api/anpr/reads?limit=60');
+      const res = await anprService.getReads(60);
       if (res.ok) {
         const json = await res.json();
         if (json.data && json.data.length > 0) {
@@ -225,7 +241,7 @@ export const ANPRPage = () => {
   // Fetch Stats from API
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/anpr/stats');
+      const res = await anprService.getStats();
       if (res.ok) {
         const json = await res.json();
         if (json.stats) {
@@ -240,7 +256,7 @@ export const ANPRPage = () => {
   // Fetch Hotlist from API
   const fetchHotlist = async () => {
     try {
-      const res = await fetch('/api/anpr/hotlist');
+      const res = await anprService.getHotlist();
       if (res.ok) {
         const json = await res.json();
         if (json.data) {
@@ -272,7 +288,7 @@ export const ANPRPage = () => {
     setVahanModalOpen(true);
     setVahanLoading(true);
     try {
-      const res = await fetch(`/api/anpr/vahan/${encodeURIComponent(plate)}`);
+      const res = await anprService.vahanLookup(plate);
       if (res.ok) {
         const data = await res.json();
         setVahanData(data);
@@ -288,13 +304,9 @@ export const ANPRPage = () => {
   const handleSimulateScan = async () => {
     setIsScanning(true);
     try {
-      const res = await fetch('/api/anpr/simulate-scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          zone: 'Sector 4 Red Perimeter',
-          camera: 'CAM-05 (Highway Lane 1)'
-        })
+      const res = await anprService.simulateScan({
+        zone: 'Sector 4 Red Perimeter',
+        camera: 'CAM-05 (Highway Lane 1)'
       });
       if (res.ok) {
         const json = await res.json();
@@ -337,15 +349,11 @@ export const ANPRPage = () => {
   const handleAddToHotlist = async () => {
     if (!addPlateInput.trim()) return;
     try {
-      const res = await fetch('/api/anpr/hotlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plate_number: addPlateInput.trim().toUpperCase(),
-          reason: addReasonInput,
-          flag_level: addLevelInput,
-          reported_by: 'HQ Tactical Commander'
-        })
+      const res = await anprService.addToHotlist({
+        plate_number: addPlateInput.trim().toUpperCase(),
+        reason: addReasonInput,
+        flag_level: addLevelInput,
+        reported_by: 'HQ Tactical Commander'
       });
       if (res.ok) {
         setAddHotlistModalOpen(false);
@@ -362,9 +370,7 @@ export const ANPRPage = () => {
   // Remove Plate from Hotlist
   const handleRemoveFromHotlist = async (plate: string) => {
     try {
-      const res = await fetch(`/api/anpr/hotlist/${encodeURIComponent(plate)}`, {
-        method: 'DELETE'
-      });
+      const res = await anprService.removeFromHotlist(plate);
       if (res.ok) {
         fetchHotlist();
         fetchReads();
@@ -379,13 +385,13 @@ export const ANPRPage = () => {
   const handleExportData = () => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `IBVAP-ANPR-Telemetry-${timestamp}.csv`;
-    
+
     const headers = [
-      'ID', 'Track_ID', 'Plate_Number', 'Vehicle_Type', 'Camera', 
-      'Confidence_Pct', 'Time', 'Speed_KMH', 'Speed_Status', 
+      'ID', 'Track_ID', 'Plate_Number', 'Vehicle_Type', 'Camera',
+      'Confidence_Pct', 'Time', 'Speed_KMH', 'Speed_Status',
       'Hotlist_Status', 'Flag_Reason', 'Zone'
     ];
-    
+
     const csvRows = [
       `# IBVAP AUTOMATIC NUMBER PLATE RECOGNITION (ANPR) TELEMETRY DOSSIER`,
       `# Export Date: ${new Date().toUTCString()} · Total Records: ${reads.length}`,
@@ -423,14 +429,14 @@ export const ANPRPage = () => {
 
   // Filter reads for display
   const filteredData = reads.filter(item => {
-    const matchesSearch = 
-      item.plate.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matchesSearch =
+      item.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.camera.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.flag_reason && item.flag_reason.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
     const matchesType = typeFilter === 'ALL' || item.type.toUpperCase() === typeFilter.toUpperCase();
-    
+
     let matchesStatus = true;
     if (statusFilter === 'FLAGGED') matchesStatus = item.is_flagged;
     if (statusFilter === 'OVERSPEED') matchesStatus = item.speed_status === 'OVERSPEED';
@@ -440,12 +446,12 @@ export const ANPRPage = () => {
 
   return (
     <div className="p-4 md:p-6 h-full flex flex-col bg-[#070B12] text-slate-200 overflow-y-auto space-y-6 font-sans">
-      
+
       {/* Top Header with Military Tactical Backdrop */}
       <div className="relative rounded-2xl border border-[#1B2536] overflow-hidden shadow-2xl bg-[#0A0F18]">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center opacity-25 mix-blend-luminosity pointer-events-none"
-          style={{ backgroundImage: `url('/anpr-header-bg.jpg')` }}
+          style={{ backgroundImage: `url('/bg-traffic.jpg')` }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0A0F18] via-[#0A0F18]/90 to-transparent pointer-events-none" />
 
@@ -472,8 +478,8 @@ export const ANPRPage = () => {
             <button
               onClick={() => setIsAutoSync(!isAutoSync)}
               className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all ${
-                isAutoSync 
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-lg shadow-emerald-950/20' 
+                isAutoSync
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-lg shadow-emerald-950/20'
                   : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
               }`}
             >
@@ -482,7 +488,7 @@ export const ANPRPage = () => {
             </button>
 
             {/* Checkpoint Scan Trigger */}
-            <Button 
+            <Button
               size="sm"
               disabled={isScanning}
               onClick={handleSimulateScan}
@@ -504,11 +510,11 @@ export const ANPRPage = () => {
             </Button>
 
             {/* Export CSV Dossier */}
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={handleExportData}
-              className="bg-[#0F1726] border-[#1E293B] hover:bg-slate-800 text-xs text-slate-200 font-mono h-8" 
+              className="bg-[#0F1726] border-[#1E293B] hover:bg-slate-800 text-xs text-slate-200 font-mono h-8"
             >
               <Download className="w-3.5 h-3.5 mr-1.5 text-cyan-400" />
               Export Dossier
@@ -521,9 +527,9 @@ export const ANPRPage = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Total Reads */}
         <div className="relative overflow-hidden bg-[#0A0F18] border border-[#1B2536] rounded-xl p-4 flex flex-col justify-between hover:border-blue-500/40 transition-colors shadow-lg">
-          <div 
+          <div
             className="absolute right-0 top-0 bottom-0 w-24 bg-cover bg-center opacity-10 pointer-events-none"
-            style={{ backgroundImage: `url('/anpr-kpi-reads.jpg')` }}
+            style={{ backgroundImage: `url('/bg-traffic.jpg')` }}
           />
           <div className="flex items-center justify-between relative z-10">
             <span className="text-[11px] font-semibold text-slate-400 uppercase font-mono">Total Reads</span>
@@ -544,9 +550,9 @@ export const ANPRPage = () => {
 
         {/* Unique Plates */}
         <div className="relative overflow-hidden bg-[#0A0F18] border border-[#1B2536] rounded-xl p-4 flex flex-col justify-between hover:border-emerald-500/40 transition-colors shadow-lg">
-          <div 
+          <div
             className="absolute right-0 top-0 bottom-0 w-24 bg-cover bg-center opacity-10 pointer-events-none"
-            style={{ backgroundImage: `url('/anpr-kpi-plates.jpg')` }}
+            style={{ backgroundImage: `url('/bg-traffic.jpg')` }}
           />
           <div className="flex items-center justify-between relative z-10">
             <span className="text-[11px] font-semibold text-slate-400 uppercase font-mono">Unique Vehicles</span>
@@ -564,9 +570,9 @@ export const ANPRPage = () => {
 
         {/* Avg Confidence */}
         <div className="relative overflow-hidden bg-[#0A0F18] border border-[#1B2536] rounded-xl p-4 flex flex-col justify-between hover:border-purple-500/40 transition-colors shadow-lg">
-          <div 
+          <div
             className="absolute right-0 top-0 bottom-0 w-24 bg-cover bg-center opacity-10 pointer-events-none"
-            style={{ backgroundImage: `url('/anpr-kpi-confidence.jpg')` }}
+            style={{ backgroundImage: `url('/bg-analytics.jpg')` }}
           />
           <div className="flex items-center justify-between relative z-10">
             <span className="text-[11px] font-semibold text-slate-400 uppercase font-mono">OCR Confidence</span>
@@ -584,9 +590,9 @@ export const ANPRPage = () => {
 
         {/* Hotlist Alerts Generated */}
         <div className="relative overflow-hidden bg-[#0A0F18] border border-red-500/30 rounded-xl p-4 flex flex-col justify-between hover:border-red-500/60 transition-colors shadow-lg">
-          <div 
+          <div
             className="absolute right-0 top-0 bottom-0 w-24 bg-cover bg-center opacity-15 pointer-events-none"
-            style={{ backgroundImage: `url('/anpr-kpi-alerts.jpg')` }}
+            style={{ backgroundImage: `url('/bg-operations.jpg')` }}
           />
           <div className="flex items-center justify-between relative z-10">
             <span className="text-[11px] font-semibold text-slate-400 uppercase font-mono">BOLO Hotlist</span>
@@ -606,10 +612,10 @@ export const ANPRPage = () => {
 
       {/* Main Grid: Left Table (7 cols) + Right Inspection Console (5 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* Left: Plate Telemetry Feed */}
         <div className="lg:col-span-7 bg-[#0A0F18] border border-[#1B2536] rounded-xl shadow-xl overflow-hidden flex flex-col">
-          
+
           {/* Table Header & Controls Bar */}
           <div className="p-4 border-b border-[#1B2536] flex flex-wrap items-center justify-between gap-3 bg-[#070B12]">
             <div className="flex items-center gap-2">
@@ -707,12 +713,12 @@ export const ANPRPage = () => {
                     const isSelected = selectedPlate?.id === item.id || selectedPlate?.plate === item.plate;
                     const isFlashing = flashNewId === item.id;
                     return (
-                      <TableRow 
-                        key={item.id} 
+                      <TableRow
+                        key={item.id}
                         onClick={() => setSelectedPlate(item)}
                         className={`border-[#1B2536] cursor-pointer transition-all ${
                           isFlashing ? 'bg-cyan-500/30 animate-pulse' :
-                          isSelected ? 'bg-cyan-500/10 border-l-4 border-cyan-400' : 
+                          isSelected ? 'bg-cyan-500/10 border-l-4 border-cyan-400' :
                           item.is_flagged ? 'bg-red-500/5 hover:bg-red-500/10' :
                           'hover:bg-[#0F1726]/60'
                         }`}
@@ -721,9 +727,9 @@ export const ANPRPage = () => {
                           <div className="flex items-center gap-2.5">
                             {/* Vehicle Thumbnail */}
                             <div className="w-10 h-8 rounded bg-slate-900 border border-[#1E293B] overflow-hidden flex-shrink-0 relative">
-                              <img 
-                                src={item.thumb} 
-                                alt={item.plate} 
+                              <img
+                                src={item.thumb}
+                                alt={item.plate}
                                 className="w-full h-full object-cover"
                                 onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                               />
@@ -734,8 +740,8 @@ export const ANPRPage = () => {
 
                             {/* Indian License Plate Badge */}
                             <div className={`px-2.5 py-1 rounded text-white tracking-widest inline-flex items-center gap-1.5 shadow-sm font-mono text-xs border ${
-                              item.is_flagged 
-                                ? 'bg-red-950/40 border-red-500/50 text-red-200' 
+                              item.is_flagged
+                                ? 'bg-red-950/40 border-red-500/50 text-red-200'
                                 : 'bg-[#070B12] border-[#1E293B]'
                             }`}>
                               <span className="text-[9px] text-cyan-400 font-bold">IND</span>
@@ -743,7 +749,7 @@ export const ANPRPage = () => {
                             </div>
                           </div>
                         </TableCell>
-                        
+
                         <TableCell>
                           <Badge variant="outline" className="bg-[#0F1726] text-slate-300 border-[#1E293B] text-[11px] font-mono">
                             {item.type}
@@ -753,8 +759,8 @@ export const ANPRPage = () => {
                         {/* Radar Velocity */}
                         <TableCell className="font-mono text-xs">
                           <span className={`inline-flex items-center gap-1 font-bold ${
-                            item.speed_status === 'OVERSPEED' 
-                              ? 'text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30' 
+                            item.speed_status === 'OVERSPEED'
+                              ? 'text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30'
                               : 'text-slate-300'
                           }`}>
                             <Gauge size={12} className={item.speed_status === 'OVERSPEED' ? 'text-amber-400 animate-pulse' : 'text-slate-500'} />
@@ -766,9 +772,9 @@ export const ANPRPage = () => {
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             <div className="w-14 h-1.5 bg-slate-800 rounded-full overflow-hidden border border-[#1E293B]">
-                              <div 
-                                className={`h-full rounded-full ${item.confidence > 90 ? 'bg-emerald-500' : 'bg-amber-500'}`} 
-                                style={{ width: `${item.confidence}%` }} 
+                              <div
+                                className={`h-full rounded-full ${item.confidence > 90 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                style={{ width: `${item.confidence}%` }}
                               />
                             </div>
                             <span className="text-xs font-mono text-slate-300 font-bold">{item.confidence}%</span>
@@ -792,9 +798,9 @@ export const ANPRPage = () => {
 
                         {/* Inspect CTA */}
                         <TableCell className="text-right">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={(e) => { e.stopPropagation(); setSelectedPlate(item); }}
                             className="text-xs font-mono text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 h-7 px-2.5"
                           >
@@ -862,12 +868,12 @@ export const ANPRPage = () => {
 
             {/* Captured Vehicle Context Snapshot */}
             <div className="mt-4 relative rounded-xl overflow-hidden border border-[#1B2536] aspect-video bg-slate-900 group">
-              <img 
-                src={selectedPlate?.vehicleImg || '/thumb-anpr-car.jpg'} 
-                alt="Captured Vehicle" 
+              <img
+                src={selectedPlate?.vehicleImg || '/thumb-anpr-car.jpg'}
+                alt="Captured Vehicle"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/feed-road01.jpg';
+                  (e.target as HTMLImageElement).src = '/bg-traffic.jpg';
                 }}
               />
               <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/80 rounded text-[10px] font-mono text-cyan-300 font-bold border border-cyan-500/30">
@@ -913,8 +919,8 @@ export const ANPRPage = () => {
                 <span className={`font-bold ${
                   selectedPlate?.is_flagged ? 'text-red-400 animate-pulse' : 'text-emerald-400'
                 }`}>
-                  {selectedPlate?.is_flagged 
-                    ? `ALERT: ${selectedPlate?.flag_reason || 'WATCHLIST HIT'}` 
+                  {selectedPlate?.is_flagged
+                    ? `ALERT: ${selectedPlate?.flag_reason || 'WATCHLIST HIT'}`
                     : 'CLEARED (No Active Flags)'}
                 </span>
               </div>
@@ -923,16 +929,16 @@ export const ANPRPage = () => {
 
           {/* Action buttons */}
           <div className="pt-4 space-y-2.5 font-mono">
-            <Button 
+            <Button
               className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold transition-all shadow-lg shadow-cyan-950/40 h-9"
               onClick={() => handleVerifyVahan(selectedPlate?.plate || 'DL-01-AB-1234')}
             >
               <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
               Verify Vehicle In National VAHAN Registry
             </Button>
-            
+
             {selectedPlate?.is_flagged ? (
-              <Button 
+              <Button
                 variant="outline"
                 className="w-full border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 text-xs font-bold h-9"
                 onClick={() => handleRemoveFromHotlist(selectedPlate.plate)}
@@ -941,7 +947,7 @@ export const ANPRPage = () => {
                 Clear Plate From Hotlist / Watchlist
               </Button>
             ) : (
-              <Button 
+              <Button
                 variant="outline"
                 className="w-full border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs font-bold h-9"
                 onClick={() => {
@@ -977,7 +983,7 @@ export const ANPRPage = () => {
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setVahanModalOpen(false)}
                 className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
               >
@@ -1004,7 +1010,7 @@ export const ANPRPage = () => {
                   </div>
                   <Badge className={`${
                     vahanData.hotlist_status.includes('FLAGGED')
-                      ? 'bg-red-500/20 text-red-400 border-red-500/40' 
+                      ? 'bg-red-500/20 text-red-400 border-red-500/40'
                       : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
                   }`}>
                     {vahanData.hotlist_status}
@@ -1070,7 +1076,7 @@ export const ANPRPage = () => {
 
                 {/* Close Button */}
                 <div className="pt-2">
-                  <Button 
+                  <Button
                     className="w-full bg-[#1B2536] hover:bg-[#25334A] text-white font-mono text-xs"
                     onClick={() => setVahanModalOpen(false)}
                   >
@@ -1092,7 +1098,7 @@ export const ANPRPage = () => {
                 <ShieldAlert className="w-5 h-5 text-red-400" />
                 ADD PLATE TO BOLO HOTLIST
               </h3>
-              <button 
+              <button
                 onClick={() => setAddHotlistModalOpen(false)}
                 className="text-slate-400 hover:text-white"
               >
@@ -1173,7 +1179,7 @@ export const ANPRPage = () => {
                 >
                   <Plus className="w-3.5 h-3.5 mr-1" /> Add Target
                 </Button>
-                <button 
+                <button
                   onClick={() => setHotlistManagerOpen(false)}
                   className="text-slate-400 hover:text-white p-1"
                 >

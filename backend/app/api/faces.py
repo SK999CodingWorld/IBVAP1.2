@@ -7,14 +7,14 @@ import shutil
 router = APIRouter(tags=["faces"])
 
 
-@router.get("/api/faces/watchlist")
+@router.get("/faces/watchlist")
 async def list_face_watchlist():
     """Returns the persistent watchlist database from face_engine"""
     watchlist = face_engine.get_watchlist()
     return {"status": "success", "count": len(watchlist), "data": watchlist}
 
 
-@router.get("/api/faces/detections")
+@router.get("/faces/detections")
 async def list_face_detections():
     """Returns recognized watchlist faces and identification events"""
     watchlist = face_engine.get_watchlist()
@@ -25,7 +25,7 @@ async def list_face_detections():
     }
 
 
-@router.get("/api/faces/config")
+@router.get("/faces/config")
 async def get_face_config():
     """Returns face recognition engine configuration & threshold"""
     return {
@@ -40,7 +40,7 @@ async def get_face_config():
     }
 
 
-@router.put("/api/faces/config")
+@router.put("/faces/config")
 async def update_face_config(config: Dict[str, Any]):
     """Updates face recognition engine configuration and similarity threshold"""
     if "similarity_threshold" in config:
@@ -54,7 +54,7 @@ async def update_face_config(config: Dict[str, Any]):
     }
 
 
-@router.post("/api/faces/watchlist")
+@router.post("/faces/watchlist")
 async def add_to_watchlist(
     name: str = Form(...),
     is_blacklist: bool = Form(False),
@@ -66,7 +66,7 @@ async def add_to_watchlist(
     safe_name = "".join(c for c in safe_name if c.isalnum() or c in ("_", "-"))
     if not safe_name:
         raise HTTPException(status_code=400, detail="Invalid face profile name")
-        
+
     tag = "BLACKLIST" if is_blacklist else "AUTHORISED"
     filename = f"{safe_name}_{tag}.jpg"
     db_dir = os.path.abspath(face_engine.database_dir)
@@ -84,13 +84,13 @@ async def add_to_watchlist(
         raise HTTPException(500, f"Failed to save face profile: {str(e)}")
 
 
-@router.delete("/api/faces/watchlist/{name}")
+@router.delete("/faces/watchlist/{name}")
 async def delete_from_watchlist(name: str):
     """Removes a face profile from the watchlist database"""
     clean_target = os.path.basename(name.strip()).lower().replace(" ", "_")
     if not clean_target:
         raise HTTPException(400, "Profile name cannot be empty")
-        
+
     removed = False
     db_dir = os.path.abspath(face_engine.database_dir)
     for filename in os.listdir(db_dir):

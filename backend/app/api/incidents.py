@@ -3,7 +3,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 from app.core.security import get_current_user
 
-router = APIRouter(prefix="/api/incidents", tags=["incidents"])
+router = APIRouter(prefix="/incidents", tags=["incidents"])
 
 @router.get("")
 async def list_incidents(

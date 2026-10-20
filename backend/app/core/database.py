@@ -32,6 +32,15 @@ if "postgresql" in DATABASE_URL:
         "max_overflow": settings.DB_MAX_OVERFLOW,
         "pool_recycle": settings.DB_POOL_RECYCLE,
     })
+    connect_args = {"ssl": "require"} if settings.DB_SSL else {}
+    # Supabase's shared transaction pooler (port 6543) cannot retain prepared
+    # statements between transactions. Disable asyncpg's statement cache there.
+    if ".pooler.supabase.com" in DATABASE_URL or ":6543/" in DATABASE_URL:
+        connect_args["statement_cache_size"] = 0
+    elif settings.DB_STATEMENT_CACHE_SIZE >= 0:
+        connect_args["statement_cache_size"] = settings.DB_STATEMENT_CACHE_SIZE
+    if connect_args:
+        engine_kwargs["connect_args"] = connect_args
 
 engine = create_async_engine(DATABASE_URL, **engine_kwargs)
 

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from app.api.auth import get_current_user
 import random
 
-router = APIRouter(prefix="/api/analytics", tags=["analytics"])
+router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 @router.get("/surveillance")
 async def get_surveillance_analytics(current_user=Depends(get_current_user)):

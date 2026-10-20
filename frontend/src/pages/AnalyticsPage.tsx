@@ -1,16 +1,34 @@
-import React, { useState } from 'react';
-import { 
-  BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, 
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+import {
+  Activity,
+  AlertTriangle,
+  Camera,
+  Car,
+  Clock,
+  Cpu,
+  Download,
+  Eye,
+  Shield,
+  Target,
+  Users,
+  Video
+} from 'lucide-react';
+import { useState } from 'react';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,YAxis
 } from 'recharts';
 import { Button } from '../components/ui/Button';
-import { 
-  Activity, Users, Car, AlertTriangle, Clock, 
-  Target, Shield, Camera, Cpu, Eye, Video, Download,
-  Layers, ChevronDown, CheckCircle2, Zap, ArrowUpRight
-} from 'lucide-react';
-
-const COLORS = ['#ef4444', '#f59e0b', '#3b82f6', '#334155'];
 
 const mockHourlyData = [
   { time: '02:00', people: 14, vehicles: 8 },
@@ -115,12 +133,12 @@ export const AnalyticsPage = () => {
 
   return (
     <div className="p-6 space-y-6 h-full overflow-y-auto bg-[#070B12] text-slate-200 font-sans">
-      
+
       {/* Top Header Banner (Mirrors media_1790496467148.jpg) */}
       <div className="relative rounded-2xl border border-[#1B2536] overflow-hidden shadow-2xl bg-[#0A0F18] p-5">
-        <div 
+        <div
           className="absolute right-0 top-0 bottom-0 w-80 bg-cover bg-center opacity-30 mix-blend-luminosity pointer-events-none"
-          style={{ backgroundImage: `url('/analytics-header-bg.jpg')` }}
+          style={{ backgroundImage: `url('/bg-analytics.jpg')` }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0A0F18] via-[#0A0F18]/90 to-transparent pointer-events-none" />
 
@@ -140,7 +158,7 @@ export const AnalyticsPage = () => {
           </div>
 
           <div className="flex items-center gap-2.5 font-mono text-xs">
-            <select 
+            <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
               className="bg-[#070B12] border border-[#1B2536] text-slate-300 rounded-lg px-3 py-1.5 outline-none focus:border-cyan-500 cursor-pointer"
@@ -150,8 +168,8 @@ export const AnalyticsPage = () => {
               <option>Last 30 Days</option>
             </select>
 
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={handleExportReport}
               className="bg-[#070B12] border-[#1E293B] text-cyan-400 hover:bg-slate-800 text-xs font-mono cursor-pointer"
@@ -265,12 +283,12 @@ export const AnalyticsPage = () => {
         <div className="space-y-6">
           {/* Middle 2-Column Grid: Detections Per Hour + Alerts by Severity */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
+
             {/* Detections Per Hour Chart */}
             <div className="lg:col-span-8 bg-[#0A0F18] border border-[#1B2536] rounded-2xl p-5 shadow-2xl relative overflow-hidden font-mono flex flex-col justify-between">
-              <div 
+              <div
                 className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none"
-                style={{ backgroundImage: `url('/analytics-detections-chart.jpg')` }}
+                style={{ backgroundImage: `url('/bg-analytics.jpg')` }}
               />
               <div className="relative z-10 flex items-center justify-between border-b border-[#1B2536] pb-3 mb-4">
                 <div className="flex items-center gap-2">
@@ -305,9 +323,9 @@ export const AnalyticsPage = () => {
 
             {/* Alerts by Severity Donut Chart */}
             <div className="lg:col-span-4 bg-[#0A0F18] border border-[#1B2536] rounded-2xl p-5 shadow-2xl relative overflow-hidden font-mono flex flex-col justify-between">
-              <div 
+              <div
                 className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none"
-                style={{ backgroundImage: `url('/analytics-donut-chart.jpg')` }}
+                style={{ backgroundImage: `url('/bg-analytics.jpg')` }}
               />
               <div className="relative z-10 flex items-center justify-between border-b border-[#1B2536] pb-3 mb-2">
                 <div className="flex items-center gap-2">
@@ -360,9 +378,9 @@ export const AnalyticsPage = () => {
 
           {/* Bottom Full-Width: Events by Camera */}
           <div className="bg-[#0A0F18] border border-[#1B2536] rounded-2xl p-5 shadow-2xl relative overflow-hidden font-mono">
-            <div 
+            <div
               className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none"
-              style={{ backgroundImage: `url('/analytics-camera-events.jpg')` }}
+              style={{ backgroundImage: `url('/bg-surveillance.jpg')` }}
             />
             <div className="relative z-10 flex items-center justify-between border-b border-[#1B2536] pb-3 mb-4">
               <div className="flex items-center gap-2">

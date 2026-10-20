@@ -1,13 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Cpu, CheckCircle2, Shield, Eye, Activity, Layers, 
-  Play, Info, Video, Check, Radio, X, Gauge, Zap, 
-  BarChart2, Server, Terminal, ExternalLink, RefreshCw, 
-  Volume2, Flame, Sliders, AlertTriangle, User, Car,
-  Sparkles, ShieldAlert, Award, Settings
-} from 'lucide-react';
+import { modelService } from '@/api';
 import { Button } from '@/components/ui/Button';
+import {
+  Activity,
+  CheckCircle2,
+  Cpu,
+  ExternalLink,
+  Info,
+  Layers,
+  Play,
+  RefreshCw,
+  Server,
+  Settings,
+  X
+} from 'lucide-react';
+import React,{ useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface ModelPipeline {
   id: string;
@@ -33,14 +40,6 @@ interface ModelPipeline {
   supportedClasses?: string[];
 }
 
-interface CapabilityItem {
-  model: string;
-  capability: string;
-  status: string;
-  hardware: string;
-  accuracy: string;
-}
-
 const AI_PIPELINES: ModelPipeline[] = [
   {
     id: 'model-yolo-detector',
@@ -48,7 +47,7 @@ const AI_PIPELINES: ModelPipeline[] = [
     role: 'Primary Object Detection & Taxonomy',
     version: 'v2.4.1-edge',
     status: 'ACTIVE',
-    previewImg: '/card-preview-1.png',
+    previewImg: '/camera-pedestrian.jpg',
     latency: '18.4 ms',
     fps: '48.2 FPS',
     classesCount: '24 Active',
@@ -70,7 +69,7 @@ const AI_PIPELINES: ModelPipeline[] = [
     role: 'Multi-Object Tracking & Motion Vectors',
     version: 'v3.1.0',
     status: 'ACTIVE',
-    previewImg: '/card-preview-2.png',
+    previewImg: '/camera-perimeter.jpg',
     latency: '3.8 ms',
     fps: '120.0 FPS',
     classesCount: '18 Active',
@@ -93,7 +92,7 @@ const AI_PIPELINES: ModelPipeline[] = [
     role: '8-Stage ANPR License Plate Engine',
     version: 'v4.2',
     status: 'ACTIVE',
-    previewImg: '/card-preview-3.png',
+    previewImg: '/camera-vehicle.jpg',
     latency: '12.6 ms',
     fps: '32.0 FPS',
     classesCount: '1 Active',
@@ -115,7 +114,7 @@ const AI_PIPELINES: ModelPipeline[] = [
     role: 'Face Detection (Audited Authorization)',
     version: 'v1.2',
     status: 'ACTIVE (Audited)',
-    previewImg: '/card-preview-4.png',
+    previewImg: '/camera-pedestrian.jpg',
     latency: '7.1 ms',
     fps: '85.0 FPS',
     classesCount: '6 Active',
@@ -137,7 +136,7 @@ const AI_PIPELINES: ModelPipeline[] = [
     role: 'Behavior, Loitering & Virtual Tripwires',
     version: 'v2.0',
     status: 'ACTIVE',
-    previewImg: '/card-preview-5.png',
+    previewImg: '/clean-map-terrain.jpg',
     latency: '22.3 ms',
     fps: '65.4 FPS',
     classesCount: '12 Active',
@@ -160,7 +159,7 @@ const AI_PIPELINES: ModelPipeline[] = [
     role: 'Vision + Audio + Sensor Fusion',
     version: 'v1.8',
     status: 'ACTIVE',
-    previewImg: '/card-preview-6.png',
+    previewImg: '/camera-checkpoint.jpg',
     latency: '28.6 ms',
     fps: '40.0 FPS',
     classesCount: '8 Active',
@@ -181,7 +180,7 @@ const AI_PIPELINES: ModelPipeline[] = [
 export const AIModelCenter: React.FC = () => {
   const navigate = useNavigate();
   const [pipelines] = useState<ModelPipeline[]>(AI_PIPELINES);
-  
+
   // Model Info Modal
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<ModelPipeline>(AI_PIPELINES[0]);
@@ -197,11 +196,7 @@ export const AIModelCenter: React.FC = () => {
     setTestModalOpen(true);
     setTestLoading(true);
     try {
-      const res = await fetch(`/api/ai-models/test/${model.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ threshold: 0.5 })
-      });
+      const res = await modelService.testInference(model.id, 0.5);
       if (res.ok) {
         const data = await res.json();
         setTestResult(data);
@@ -223,7 +218,7 @@ export const AIModelCenter: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-[#060b13] text-slate-200 overflow-y-auto p-4 md:p-6 space-y-5 font-sans">
-      
+
       {/* Top Header Row with 4 Stats (Exact Match for media_1790534752572.jpg) */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -292,7 +287,7 @@ export const AIModelCenter: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {pipelines.map((pipe) => {
           return (
-            <div 
+            <div
               key={pipe.id}
               className="bg-[#07101e] border border-[#16253b] rounded-2xl p-4 shadow-xl hover:border-cyan-500/40 transition-all flex flex-col justify-between space-y-3"
             >
@@ -316,12 +311,12 @@ export const AIModelCenter: React.FC = () => {
 
               {/* Neural Image Preview (Exact Match from Reference Screenshot) */}
               <div className="relative rounded-xl overflow-hidden border border-[#16253b] bg-[#030712] h-[120px] md:h-[128px] flex items-center justify-center">
-                <img 
-                  src={pipe.previewImg} 
-                  alt={pipe.name} 
+                <img
+                  src={pipe.previewImg}
+                  alt={pipe.name}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/feed-bop01.jpg';
+                    (e.target as HTMLImageElement).src = '/camera-perimeter.jpg';
                   }}
                 />
               </div>
@@ -344,7 +339,7 @@ export const AIModelCenter: React.FC = () => {
 
               {/* Action Buttons: Model Info + Specific Action CTA (Exact Match) */}
               <div className="grid grid-cols-2 gap-2.5">
-                <button 
+                <button
                   onClick={() => { setSelectedModel(pipe); setInfoModalOpen(true); }}
                   className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#091220] hover:bg-[#0e1b2f] border border-[#1c2c43] text-slate-300 hover:text-white text-xs font-semibold transition-all"
                 >
@@ -353,7 +348,7 @@ export const AIModelCenter: React.FC = () => {
                 </button>
 
                 {pipe.id === 'model-yolo-detector' && (
-                  <button 
+                  <button
                     onClick={() => handleAction(pipe)}
                     className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#05271c] hover:bg-[#073626] border border-[#059669]/70 text-emerald-400 text-xs font-semibold transition-all"
                   >
@@ -363,7 +358,7 @@ export const AIModelCenter: React.FC = () => {
                 )}
 
                 {pipe.id === 'model-bytetrack' && (
-                  <button 
+                  <button
                     onClick={() => handleAction(pipe)}
                     className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#082838] hover:bg-[#0c374d] border border-[#0891b2]/70 text-cyan-400 text-xs font-semibold transition-all"
                   >
@@ -373,7 +368,7 @@ export const AIModelCenter: React.FC = () => {
                 )}
 
                 {pipe.id === 'model-paddle-anpr' && (
-                  <button 
+                  <button
                     onClick={() => handleAction(pipe)}
                     className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#05271c] hover:bg-[#073626] border border-[#059669]/70 text-emerald-400 text-xs font-semibold transition-all"
                   >
@@ -383,7 +378,7 @@ export const AIModelCenter: React.FC = () => {
                 )}
 
                 {pipe.id === 'model-retinaface' && (
-                  <button 
+                  <button
                     onClick={() => handleAction(pipe)}
                     className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#240e34] hover:bg-[#34144b] border border-[#9333ea]/70 text-purple-300 text-xs font-semibold transition-all"
                   >
@@ -393,7 +388,7 @@ export const AIModelCenter: React.FC = () => {
                 )}
 
                 {pipe.id === 'model-spatiotemporal' && (
-                  <button 
+                  <button
                     onClick={() => handleAction(pipe)}
                     className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#311e08] hover:bg-[#442a0b] border border-[#d97706]/70 text-amber-400 text-xs font-semibold transition-all"
                   >
@@ -403,7 +398,7 @@ export const AIModelCenter: React.FC = () => {
                 )}
 
                 {pipe.id === 'model-multimodal' && (
-                  <button 
+                  <button
                     onClick={() => handleAction(pipe)}
                     className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#082838] hover:bg-[#0c374d] border border-[#0891b2]/70 text-cyan-400 text-xs font-semibold transition-all"
                   >
@@ -431,7 +426,7 @@ export const AIModelCenter: React.FC = () => {
                   <p className="text-[11px] text-cyan-300">{selectedModel.role}</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setInfoModalOpen(false)}
                 className="text-slate-400 hover:text-white p-1"
               >
@@ -498,7 +493,7 @@ export const AIModelCenter: React.FC = () => {
             </div>
 
             <div className="pt-2 flex gap-3">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => setInfoModalOpen(false)}
                 className="w-full bg-[#1B2536] hover:bg-[#25334A] text-white text-xs"
@@ -521,7 +516,7 @@ export const AIModelCenter: React.FC = () => {
                   Live Neural Inference: {selectedModel.name}
                 </h3>
               </div>
-              <button 
+              <button
                 onClick={() => setTestModalOpen(false)}
                 className="text-slate-400 hover:text-white"
               >

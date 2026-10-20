@@ -1,14 +1,25 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Activity, ShieldAlert, Cpu, Wifi, Camera, Download, 
-  Wrench, CheckCircle2, AlertTriangle, AlertCircle, 
-  TrendingUp, RefreshCw, BarChart2, Eye, Server, Layers,
-  ChevronDown
+import {
+  Activity,
+  AlertTriangle,
+  Camera,
+  CheckCircle2,
+  Cpu,
+  Download,
+  Wifi,
+  Wrench
 } from 'lucide-react';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, 
-  ResponsiveContainer, PieChart, Pie, Cell 
+import React,{ useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,YAxis
 } from 'recharts';
 import { Button } from '../components/ui/Button';
 
@@ -36,7 +47,7 @@ const CRITICAL_CAMERAS = [
     statusType: 'online',
     note: 'No issues detected',
     issues: [],
-    feed: '/feed-bop01.jpg'
+    feed: '/camera-perimeter.jpg'
   },
   {
     id: 'ROAD-02',
@@ -46,7 +57,7 @@ const CRITICAL_CAMERAS = [
     statusType: 'warning',
     note: '! High Latency · ! Low FPS',
     issues: ['High Latency (240ms)', 'Low Frame Rate (14 FPS)'],
-    feed: '/feed-road01.jpg'
+    feed: '/camera-vehicle.jpg'
   },
   {
     id: 'WATCH-01',
@@ -56,7 +67,7 @@ const CRITICAL_CAMERAS = [
     statusType: 'offline',
     note: '! Camera Offline · ! No Signal',
     issues: ['Network Unreachable', 'RTSP Stream Dropped'],
-    feed: '/feed-watch01.jpg'
+    feed: '/bg-operations.jpg'
   },
   {
     id: 'GATE-03',
@@ -66,7 +77,7 @@ const CRITICAL_CAMERAS = [
     statusType: 'online',
     note: 'Stable',
     issues: [],
-    feed: '/feed-gate01.jpg'
+    feed: '/camera-checkpoint.jpg'
   }
 ];
 
@@ -135,7 +146,7 @@ export const CameraHealth: React.FC = () => {
 
   return (
     <div className="p-6 bg-[#070B12] min-h-full text-slate-200 overflow-y-auto space-y-6 font-sans relative">
-      
+
       {/* Toast Notification */}
       {healthToast && (
         <div className="fixed top-5 right-5 z-50 bg-[#0E1726] border border-cyan-500/50 shadow-2xl shadow-cyan-500/20 text-white px-4 py-3 rounded-xl flex items-center gap-3 backdrop-blur-md animate-in fade-in slide-in-from-top-4">
@@ -164,7 +175,7 @@ export const CameraHealth: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5 font-mono text-xs">
-          <select 
+          <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
             className="bg-[#070B12] border border-[#1B2536] text-slate-300 rounded-lg px-3 py-1.5 outline-none focus:border-cyan-500 cursor-pointer"
@@ -174,8 +185,8 @@ export const CameraHealth: React.FC = () => {
             <option>Last 30 Days</option>
           </select>
 
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={handleGenerateReport}
             className="bg-[#070B12] border-[#1E293B] text-cyan-400 hover:bg-slate-800 text-xs font-mono cursor-pointer"
@@ -291,7 +302,7 @@ export const CameraHealth: React.FC = () => {
 
       {/* Middle Row: Trend Line Chart (Left ~65%) + Critical Cameras (Right ~35%) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
+
         {/* System Health Trend Line Chart */}
         <div className="lg:col-span-8 bg-[#0A0F18] border border-[#1B2536] rounded-2xl p-5 shadow-2xl font-mono flex flex-col justify-between">
           <div className="flex items-center justify-between border-b border-[#1B2536] pb-3 mb-4">
@@ -345,7 +356,7 @@ export const CameraHealth: React.FC = () => {
                   Critical Cameras
                 </h3>
               </div>
-              <button 
+              <button
                 onClick={() => navigate('/cameras')}
                 className="text-[11px] text-cyan-400 hover:text-cyan-300 font-bold cursor-pointer"
               >
@@ -356,8 +367,8 @@ export const CameraHealth: React.FC = () => {
             {/* List of 4 Cameras */}
             <div className="space-y-2.5">
               {CRITICAL_CAMERAS.map((cam) => (
-                <div 
-                  key={cam.id} 
+                <div
+                  key={cam.id}
                   className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 ${
                     cam.statusType === 'offline' ? 'bg-red-950/20 border-red-500/40' :
                     cam.statusType === 'warning' ? 'bg-amber-950/20 border-amber-500/40' :
@@ -365,8 +376,8 @@ export const CameraHealth: React.FC = () => {
                   }`}
                 >
                   <div className="relative w-16 h-12 rounded-lg overflow-hidden border border-[#1E293B] bg-black flex-shrink-0">
-                    <img 
-                      src={cam.feed} 
+                    <img
+                      src={cam.feed}
                       alt={cam.id}
                       className="w-full h-full object-cover"
                       onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
@@ -385,7 +396,7 @@ export const CameraHealth: React.FC = () => {
 
                     {/* Progress bar */}
                     <div className="w-full bg-[#070B12] h-1.5 rounded-full overflow-hidden border border-[#1E293B] my-1">
-                      <div 
+                      <div
                         className={`h-full rounded-full ${
                           cam.score > 80 ? 'bg-emerald-500' : cam.score > 50 ? 'bg-amber-500' : 'bg-red-500'
                         }`}
@@ -420,7 +431,7 @@ export const CameraHealth: React.FC = () => {
 
       {/* Bottom 3-Card Row (Mirrors media_1790496583685.png) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-mono">
-        
+
         {/* Card 1: Camera Health Distribution */}
         <div className="bg-[#0A0F18] border border-[#1B2536] rounded-2xl p-5 shadow-xl flex flex-col justify-between">
           <div className="border-b border-[#1B2536] pb-2.5 mb-3 flex items-center justify-between">
@@ -494,9 +505,9 @@ export const CameraHealth: React.FC = () => {
                   <span className="text-white font-bold">{issue.count}</span>
                 </div>
                 <div className="w-full bg-[#070B12] h-1.5 rounded-full overflow-hidden border border-[#1E293B]">
-                  <div 
-                    className="h-full rounded-full" 
-                    style={{ width: `${(issue.count / issue.max) * 100}%`, backgroundColor: issue.color }} 
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${(issue.count / issue.max) * 100}%`, backgroundColor: issue.color }}
                   />
                 </div>
               </div>
@@ -511,7 +522,7 @@ export const CameraHealth: React.FC = () => {
               <Cpu className="w-3.5 h-3.5 text-cyan-400" />
               AI Diagnostics
             </h3>
-            <button 
+            <button
               onClick={() => {
                 setIsDiagnosing(true);
                 showToast('Initiating neural diagnostic pipeline across 48 edge camera nodes...');

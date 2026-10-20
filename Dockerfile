@@ -3,8 +3,8 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Build arguments for Vite environment configuration
-ARG VITE_API_BASE=/api
-ENV VITE_API_BASE=$VITE_API_BASE
+ARG VITE_API_BASE_URL=/api/v1
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 # Install full dependencies (including devDependencies like typescript and vite)
 COPY frontend/package*.json ./
