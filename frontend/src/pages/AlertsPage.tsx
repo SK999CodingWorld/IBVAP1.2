@@ -1,10 +1,18 @@
-import React, { useState } from 'react';
-import { 
-  AlertTriangle, Clock, Filter, Eye, CheckCircle, ShieldAlert, 
-  AlertOctagon, Info, ArrowUpRight, Search, Shield, Bell, Check, 
-  Share2, Camera, User, Crosshair, ChevronRight, Activity, Radio
-} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import {
+  AlertOctagon,
+  AlertTriangle,
+  Bell,Check,
+  CheckCircle,
+  ChevronRight,
+  Filter,
+  Info,
+  Radio,
+  Search,
+  Share2,
+  Shield
+} from 'lucide-react';
+import { useState } from 'react';
 
 interface AlertItem {
   id: string;
@@ -36,7 +44,7 @@ const MOCK_ALERTS: AlertItem[] = [
     status: 'NEW',
     timestamp: '2026-09-27 12:53:04',
     timeStr: '2026-09-27 12:53:04 IST',
-    thumb: '/thumb-alt1.jpg'
+    thumb: '/camera-pedestrian.jpg'
   },
   {
     id: 'ALT-0043',
@@ -51,7 +59,7 @@ const MOCK_ALERTS: AlertItem[] = [
     status: 'NEW',
     timestamp: '2026-09-27 12:48:22',
     timeStr: '2026-09-27 12:48:22 IST',
-    thumb: '/thumb-alt2.jpg'
+    thumb: '/camera-pedestrian.jpg'
   },
   {
     id: 'ALT-0044',
@@ -66,7 +74,7 @@ const MOCK_ALERTS: AlertItem[] = [
     status: 'NEW',
     timestamp: '2026-09-27 12:40:11',
     timeStr: '2026-09-27 12:40:11 IST',
-    thumb: '/thumb-alt3.jpg'
+    thumb: '/camera-vehicle.jpg'
   },
   {
     id: 'ALT-0045',
@@ -81,7 +89,7 @@ const MOCK_ALERTS: AlertItem[] = [
     status: 'NEW',
     timestamp: '2026-09-27 12:35:18',
     timeStr: '2026-09-27 12:35:18 IST',
-    thumb: '/thumb-alt4.jpg'
+    thumb: '/camera-pedestrian.jpg'
   },
   {
     id: 'ALT-0046',
@@ -96,7 +104,7 @@ const MOCK_ALERTS: AlertItem[] = [
     status: 'RESOLVED',
     timestamp: '2026-09-27 12:30:41',
     timeStr: '2026-09-27 12:30:41 IST',
-    thumb: '/thumb-alt5.jpg'
+    thumb: '/camera-wildlife.jpg'
   },
 ];
 
@@ -115,7 +123,7 @@ export function AlertsPage() {
 
   const filteredAlerts = alerts.filter(a => {
     if (filterSeverity !== 'ALL' && a.severity !== filterSeverity) return false;
-    if (searchQuery && !a.id.toLowerCase().includes(searchQuery.toLowerCase()) && 
+    if (searchQuery && !a.id.toLowerCase().includes(searchQuery.toLowerCase()) &&
         !a.type.toLowerCase().includes(searchQuery.toLowerCase()) &&
         !a.cameraName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
@@ -123,12 +131,12 @@ export function AlertsPage() {
 
   return (
     <div className="h-full flex flex-col bg-[#070B12] text-slate-200 overflow-y-auto p-4 md:p-5 space-y-4 custom-scrollbar">
-      
+
       {/* ── TOP OPERATIONAL HEADER BAR ── */}
-      <div 
+      <div
         className="p-4 bg-[#0A0F18] border border-[#1B2536] rounded-xl flex flex-wrap gap-4 justify-between items-center relative overflow-hidden shadow-xl"
         style={{
-          backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.98) 45%, rgba(10, 15, 24, 0.45) 80%, rgba(10, 15, 24, 0.2) 100%), url('/alerts-header-bg.jpg')`,
+          backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.98) 45%, rgba(10, 15, 24, 0.45) 80%, rgba(10, 15, 24, 0.2) 100%), url('/bg-operations.jpg')`,
           backgroundPosition: 'right center',
           backgroundRepeat: 'no-repeat',
           backgroundSize: 'contain'
@@ -160,7 +168,7 @@ export function AlertsPage() {
 
       {/* ── STATS ROW (6 KPI BLOCKS) ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 font-mono">
-        
+
         {/* Total Active */}
         <div className="p-3 bg-[#0A0F18] border border-red-500/40 rounded-xl flex flex-col justify-between shadow-lg">
           <div className="text-[11px] text-slate-400">Total Active</div>
@@ -241,8 +249,8 @@ export function AlertsPage() {
               key={tab.id}
               onClick={() => setFilterSeverity(tab.id)}
               className={`px-3 py-1.5 rounded transition-all font-semibold ${
-                filterSeverity === tab.id 
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm' 
+                filterSeverity === tab.id
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -254,8 +262,8 @@ export function AlertsPage() {
         <div className="flex items-center gap-2">
           <div className="relative w-64">
             <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Search incident, target, camera..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -284,24 +292,31 @@ export function AlertsPage() {
 
       {/* ── MAIN 2-COLUMN WORKSPACE: ALERT LIST (LEFT) & DETAIL INSPECTION (RIGHT) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        
+
         {/* LEFT COLUMN: ALERTS LIST (~48%) */}
         <div className="lg:col-span-6 space-y-2.5">
           {filteredAlerts.map((alt) => {
             const isSelected = alt.id === selectedAlertId;
             return (
-              <div 
+              <div
                 key={alt.id}
                 onClick={() => setSelectedAlertId(alt.id)}
                 className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center gap-3.5 group shadow-lg ${
-                  isSelected 
-                    ? 'bg-[#0E1624] border-red-500/70 shadow-red-950/30' 
+                  isSelected
+                    ? 'bg-[#0E1624] border-red-500/70 shadow-red-950/30'
                     : 'bg-[#0A0F18] border-[#1B2536] hover:border-cyan-500/40 hover:bg-[#0D1420]'
                 }`}
               >
                 {/* Thumbnail Image */}
                 <div className="relative w-20 h-14 rounded-lg overflow-hidden bg-black/60 border border-[#1E293B] flex-shrink-0">
-                  <img src={alt.thumb} alt={alt.type} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  <img
+                    src={alt.thumb}
+                    alt={alt.type}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/camera-pedestrian.jpg';
+                    }}
+                  />
                   <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                 </div>
 
@@ -343,7 +358,7 @@ export function AlertsPage() {
 
         {/* RIGHT COLUMN: DETAIL INSPECTION CONSOLE (~52%) */}
         <div className="lg:col-span-6 bg-[#0A0F18] border border-[#1B2536] rounded-xl p-4 space-y-4 shadow-xl font-mono text-xs">
-          
+
           {/* Header Bar */}
           <div className="flex justify-between items-start border-b border-[#1B2536] pb-3">
             <div>
@@ -372,13 +387,16 @@ export function AlertsPage() {
 
           {/* Video Preview & Metadata Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-            
+
             {/* Real Snapshot Video Frame */}
             <div className="sm:col-span-7 relative rounded-lg overflow-hidden border border-[#1E293B] bg-black">
-              <img 
-                src="/alert-detail-feed.jpg" 
-                alt="Alert Detail Feed" 
+              <img
+                src="/camera-pedestrian.jpg"
+                alt="Alert Detail Feed"
                 className="w-full h-auto aspect-video object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/camera-perimeter.jpg';
+                }}
               />
               <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/80 rounded text-[9px] font-bold text-slate-200 border border-slate-700">
                 {selectedAlert.camera}
@@ -428,22 +446,22 @@ export function AlertsPage() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={() => handleAction(selectedAlert.id, 'ACKNOWLEDGED')}
               className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs"
             >
               <Check size={14} className="mr-1" /> Acknowledge Alert
             </Button>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={() => handleAction(selectedAlert.id, 'DISPATCHED')}
               className="bg-transparent hover:bg-red-950/40 text-red-400 border border-red-500/50 font-bold text-xs"
             >
               <Radio size={14} className="mr-1" /> Dispatch Patrol Unit
             </Button>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="outline"
               className="border-[#1E293B] text-slate-300 hover:text-white text-xs"
             >
@@ -464,8 +482,8 @@ export function AlertsPage() {
                   key={t.id}
                   onClick={() => setActiveTab(t.id as any)}
                   className={`px-2.5 py-1 rounded transition-colors ${
-                    activeTab === t.id 
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold' 
+                    activeTab === t.id
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >

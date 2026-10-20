@@ -1,47 +1,53 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import model_validator
-from typing import List, Optional
-import os
+from pathlib import Path
+from typing import List
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 class Settings(BaseSettings):
     # Environment & Host
     ENVIRONMENT: str = "development"
     HOST: str = "0.0.0.0"
     PORT: int = 8000
-    
+
     # Security & Tokens
     SECRET_KEY: str = "supersecretkey-change-in-production-ibvap-safe-dev-key"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     WEBHOOK_SECRET: str = "ibvap_default_webhook_secret_32bytes_min"
-    
+
     # Database Configuration & Pool Sizing
     DATABASE_URL: str = "sqlite+aiosqlite:///./ibvap.db"
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 20
     DB_POOL_RECYCLE: int = 1800
-    
+    DB_SSL: bool = False
+    DB_STATEMENT_CACHE_SIZE: int = 100
+
     # Cache & Messaging
     REDIS_URL: str = "redis://localhost:6379"
-    
+
     # CORS & Limits
     CORS_ORIGINS: List[str] = ["*"]
     RATE_LIMIT_PER_MINUTE: int = 120
     MAX_REQUEST_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB
-    
+
     # Feature Flags & Demo Mode
     DEMO_MODE: bool = True
     DEMO_ADMIN_USERNAME: str = "admin"
     DEMO_ADMIN_PASSWORD: str = "admin123"
     ENABLE_KEY_HEALTH_CHECK: bool = False
-    
+    ENABLE_BACKGROUND_WORKERS: bool = True
+
     # Edge & AI
     AI_BACKEND: str = "mock"
     EDGE_NODE_ID: str = "EDGE-001"
 
     model_config = SettingsConfigDict(
-        env_file=(".env", "backend/.env", "../.env"),
+        env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
-        extra="ignore"
+        extra="ignore",
+        case_sensitive=False,
     )
 
     @model_validator(mode="after")
@@ -65,6 +71,21 @@ class Settings(BaseSettings):
                     "FATAL: In production, DATABASE_URL must be configured with a PostgreSQL database "
                     "(e.g. postgresql+asyncpg://user:pass@host:port/dbname). SQLite is not permitted."
                 )
+            if self.DEMO_MODE:
+                raise ValueError("FATAL: DEMO_MODE must be false in production.")
+            if self.ENABLE_BACKGROUND_WORKERS:
+                raise ValueError(
+                    "FATAL: ENABLE_BACKGROUND_WORKERS must be false for the web API. "
+                    "Run camera and AI workers as separate services."
+                )
+            if not self.WEBHOOK_SECRET or len(self.WEBHOOK_SECRET) < 32 or self.WEBHOOK_SECRET == "ibvap_webhook_signature_secret_32bytes_change_in_prod":
+                raise ValueError("FATAL: WEBHOOK_SECRET must be a unique secret with at least 32 characters.")
+            if not self.DB_SSL:
+                raise ValueError("FATAL: DB_SSL must be enabled for production database connections.")
+            if not self.CORS_ORIGINS or "*" in self.CORS_ORIGINS:
+                raise ValueError("FATAL: Set explicit frontend origins in CORS_ORIGINS for production.")
+            if any(not origin.startswith("https://") for origin in self.CORS_ORIGINS):
+                raise ValueError("FATAL: Production CORS_ORIGINS must contain HTTPS origins only.")
         return self
 
 settings = Settings()

@@ -1,11 +1,15 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends
 from fastapi.responses import HTMLResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from contextlib import suppress
 import asyncio
 import json
 import os
+import logging
+
+logger = logging.getLogger("ibvap.main")
 
 import httpx
 from starlette.middleware.gzip import GZipMiddleware
@@ -20,8 +24,11 @@ from app.core.middleware import (
     RateLimitMiddleware,
     metrics_tracker
 )
+from app.core.errors import install_exception_handlers
+from app.core.security import get_current_active_user, get_current_user, get_media_user
 import app.models
-from app.api import auth, users, dashboard
+from app.api import dashboard
+from app.api.v1 import router as api_router
 from app.services.seed import seed_db
 from app.ai.realtime_stream import live_stream_processor
 import time
@@ -65,39 +72,50 @@ async def run_background_telemetry():
                     })
         except asyncio.CancelledError:
             break
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error in background telemetry loop: {e}", exc_info=True)
             await asyncio.sleep(4.0)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: shared HTTP client for resilient external service calls
     app.state.http_client = httpx.AsyncClient(timeout=10.0)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    if settings.DEMO_MODE:
-        async with AsyncSessionLocal() as session:
-            await seed_db(session)
-    
-    # Launch active background telemetry service and live stream processor if not running unit tests
     bg_task = None
-    if not os.environ.get("TESTING"):
-        bg_task = asyncio.create_task(run_background_telemetry())
-        live_stream_processor.start()
-    
-    yield
-    # Shutdown: clean resource teardown
-    if bg_task:
-        bg_task.cancel()
-    live_stream_processor.stop()
-    await app.state.http_client.aclose()
-    await cache.close()
-    await engine.dispose()
+    stream_processor_started = False
+    try:
+        if settings.ENVIRONMENT.lower() != "production":
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+        elif not await ping_database():
+            raise RuntimeError("Database health check failed during production startup.")
+
+        if settings.DEMO_MODE and settings.ENVIRONMENT.lower() != "production":
+            async with AsyncSessionLocal() as session:
+                await seed_db(session)
+
+        if settings.ENABLE_BACKGROUND_WORKERS and not os.environ.get("TESTING"):
+            if settings.DEMO_MODE:
+                bg_task = asyncio.create_task(run_background_telemetry())
+            live_stream_processor.start()
+            stream_processor_started = True
+
+        yield
+    finally:
+        if bg_task:
+            bg_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await bg_task
+        if stream_processor_started:
+            live_stream_processor.stop()
+        await app.state.http_client.aclose()
+        await cache.close()
+        await engine.dispose()
 
 app = FastAPI(
     title="IBVAP - Intelligent Border Video Analytics Platform",
+    version="1.2.0",
     lifespan=lifespan
 )
+install_exception_handlers(app)
 
 # Compression & Security Middlewares
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -113,49 +131,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount API Routers
-app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(dashboard.router)
+# Compatibility aliases for legacy frontend clients
+@api_router.get("/alerts/recent", tags=["alerts"], dependencies=[Depends(get_current_active_user)])
+async def get_recent_alerts_alias():
+    """Alias for recent alerts feed"""
+    from app.api.dashboard import get_recent_alerts
+    return await get_recent_alerts()
 
-from app.api import (
-    cameras, detections, tracking, anpr, zones, faces, map, evidence, 
-    audit, security, alerts, incidents, edge, analytics, system, notifications, search,
-    video_intelligence, ai_models
-)
-from app.api import settings as settings_api
-
-app.include_router(cameras.router)
-app.include_router(detections.router)
-app.include_router(tracking.router)
-app.include_router(anpr.router)
-app.include_router(zones.router)
-app.include_router(faces.router)
-app.include_router(map.router)
-app.include_router(evidence.router)
-app.include_router(audit.router)
-app.include_router(security.router)
-app.include_router(alerts.router)
-app.include_router(incidents.router)
-app.include_router(edge.router)
-app.include_router(analytics.router)
-app.include_router(system.router)
-app.include_router(settings_api.router)
-app.include_router(notifications.router)
-app.include_router(search.router)
-app.include_router(video_intelligence.router)
-app.include_router(ai_models.router)
+@api_router.get("/events/recent", tags=["dashboard"], dependencies=[Depends(get_current_active_user)])
+async def get_recent_events_alias():
+    """Alias for recent events feed"""
+    from app.api.dashboard import get_recent_events
+    return await get_recent_events()
 
 @app.get("/health", tags=["health"])
 async def public_health():
     """Lightweight 200 OK healthcheck for container orchestrators and load balancers."""
     return {"status": "ok", "service": "IBVAP", "version": "1.2.0"}
 
-@app.get("/api/health", tags=["health"])
+@api_router.get("/health", tags=["health"])
 async def health_check():
     db_ok = await ping_database()
+    if not db_ok:
+        raise HTTPException(status_code=503, detail="Database unavailable")
     return {
-        "status": "healthy" if db_ok else "degraded",
+        "status": "healthy",
         "service": "IBVAP Enterprise Surveillance",
         "version": "1.2.0",
         "database": "connected" if db_ok else "error",
@@ -163,10 +163,12 @@ async def health_check():
         "ai_engine": "YOLOv8 + ByteTrack + PaddleOCR + RetinaFace"
     }
 
-@app.get("/health/keys", tags=["health"])
-@app.get("/api/health/keys", tags=["health"])
+@app.get("/health/keys", tags=["health"], dependencies=[Depends(get_current_active_user)])
+@api_router.get("/health/keys", tags=["health"], dependencies=[Depends(get_current_active_user)])
 async def key_health_check():
     """Masked diagnostics of configured credentials, database, and cache without exposing secrets."""
+    if not settings.ENABLE_KEY_HEALTH_CHECK:
+        raise HTTPException(status_code=404, detail="Not found")
     def mask_key(k: str) -> str:
         if not k or len(k) < 6:
             return "****"
@@ -174,7 +176,7 @@ async def key_health_check():
 
     db_ok = await ping_database()
     cache_info = await cache.ping()
-    
+
     return {
         "status": "healthy" if db_ok else "degraded",
         "environment": settings.ENVIRONMENT,
@@ -192,16 +194,16 @@ async def key_health_check():
         }
     }
 
-@app.get("/api/system/performance-metrics", tags=["system"])
+@api_router.get("/system/performance-metrics", tags=["system"], dependencies=[Depends(get_current_active_user)])
 async def get_performance_metrics():
     """Real-time latency (p50, p95, p99) and request metrics."""
     return metrics_tracker.get_stats()
 
 # Live Real-time AI Video Feed (MJPEG)
-@app.get("/video_feed", tags=["stream"])
-@app.get("/video_feed/{camera_id}", tags=["stream"])
-@app.get("/api/stream/feed", tags=["stream"])
-@app.get("/api/stream/feed/{camera_id}", tags=["stream"])
+@app.get("/video_feed", tags=["stream"], dependencies=[Depends(get_media_user)])
+@app.get("/video_feed/{camera_id}", tags=["stream"], dependencies=[Depends(get_media_user)])
+@api_router.get("/stream/feed", tags=["stream"], dependencies=[Depends(get_media_user)])
+@api_router.get("/stream/feed/{camera_id}", tags=["stream"], dependencies=[Depends(get_media_user)])
 def video_feed(camera_id: Optional[str] = None):
     """Real-time MJPEG live stream with annotated YOLO & ByteTrack overlays"""
     return StreamingResponse(
@@ -210,8 +212,8 @@ def video_feed(camera_id: Optional[str] = None):
     )
 
 # Cumulative Foot Traffic Heatmap Stream
-@app.get("/api/stream/heatmap", tags=["stream"])
-@app.get("/api/stream/heatmap/{camera_id}", tags=["stream"])
+@api_router.get("/stream/heatmap", tags=["stream"], dependencies=[Depends(get_media_user)])
+@api_router.get("/stream/heatmap/{camera_id}", tags=["stream"], dependencies=[Depends(get_media_user)])
 def heatmap_feed(camera_id: Optional[str] = None):
     """Cumulative foot-traffic motion heatmap MJPEG stream"""
     return StreamingResponse(
@@ -219,24 +221,24 @@ def heatmap_feed(camera_id: Optional[str] = None):
         media_type="multipart/x-mixed-replace; boundary=frame"
     )
 
-@app.get("/api/stream/density", tags=["stream"])
+@api_router.get("/stream/density", tags=["stream"], dependencies=[Depends(get_current_active_user)])
 def get_crowd_density():
     """Returns zone crowd count, total persons, and overcrowding status"""
     return live_stream_processor.get_density_metrics()
 
-@app.post("/api/density/threshold", tags=["stream"])
+@api_router.post("/density/threshold", tags=["stream"], dependencies=[Depends(get_current_active_user)])
 def set_crowd_threshold(payload: dict):
     """Configures the overcrowding threshold limit"""
     thresh = int(payload.get("threshold", 6))
     return live_stream_processor.set_crowd_threshold(thresh)
 
-@app.post("/api/heatmap/reset", tags=["stream"])
+@api_router.post("/heatmap/reset", tags=["stream"], dependencies=[Depends(get_current_active_user)])
 def reset_heatmap():
     """Resets the accumulated movement heatmap"""
     return live_stream_processor.reset_heatmap()
 
 # Low-Light & Night-Vision Enhancement Control API
-@app.get("/api/stream/enhancer", tags=["stream"])
+@api_router.get("/stream/enhancer", tags=["stream"], dependencies=[Depends(get_current_active_user)])
 async def get_enhancer_status():
     """Returns low-light preprocessor status, current brightness, latency, and FPS"""
     from app.ai.enhancer import low_light_enhancer
@@ -244,7 +246,7 @@ async def get_enhancer_status():
     status["fps"] = round(getattr(live_stream_processor, "fps", 30.0), 1)
     return status
 
-@app.post("/api/stream/enhancer", tags=["stream"])
+@api_router.post("/stream/enhancer", tags=["stream"], dependencies=[Depends(get_current_active_user)])
 async def configure_enhancer(payload: dict):
     """Toggles or configures low-light CLAHE enhancement preprocessor"""
     from app.ai.enhancer import low_light_enhancer
@@ -254,12 +256,12 @@ async def configure_enhancer(payload: dict):
     return low_light_enhancer.set_config(enabled=enabled, threshold=threshold, clip_limit=clip_limit)
 
 # Edge Performance & Multi-Rate Inference Optimization API
-@app.get("/api/stream/performance", tags=["stream"])
+@api_router.get("/stream/performance", tags=["stream"], dependencies=[Depends(get_current_active_user)])
 async def get_performance_stats():
     """Returns frame-skip, inference resolution, and active FPS telemetry"""
     return live_stream_processor.get_performance_config()
 
-@app.post("/api/stream/performance", tags=["stream"])
+@api_router.post("/stream/performance", tags=["stream"], dependencies=[Depends(get_current_active_user)])
 async def configure_performance(payload: dict):
     """Configures edge frame-skip (N) and downscaled inference resolution"""
     frame_skip = payload.get("frame_skip")
@@ -269,11 +271,11 @@ async def configure_performance(payload: dict):
         frame_skip=frame_skip, infer_width=infer_width, infer_height=infer_height
     )
 
-@app.get("/api/stream/alerts", tags=["stream"])
+@api_router.get("/stream/alerts", tags=["stream"], dependencies=[Depends(get_current_active_user)])
 def stream_alerts():
     return live_stream_processor.get_live_alerts()
 
-@app.get("/api/stream/snapshot", tags=["stream"])
+@api_router.get("/stream/snapshot", tags=["stream"], dependencies=[Depends(get_media_user)])
 def get_stream_snapshot():
     """Returns a single clean JPEG frame for 4-point zone polygon calibration"""
     from fastapi.responses import Response
@@ -282,39 +284,39 @@ def get_stream_snapshot():
         media_type="image/jpeg"
     )
 
-@app.get("/api/stream/zone", tags=["stream"])
+@api_router.get("/stream/zone", tags=["stream"], dependencies=[Depends(get_current_active_user)])
 def get_zone_polygon():
     """Returns the active 4-point restricted zone polygon coordinates"""
     return live_stream_processor.get_zone_polygon()
 
-@app.post("/api/stream/zone", tags=["stream"])
+@api_router.post("/stream/zone", tags=["stream"], dependencies=[Depends(get_current_active_user)])
 def update_zone_polygon(payload: dict):
     """Updates the restricted zone polygon from the interactive UI setup mode"""
     polygon = payload.get("polygon", [])
     if len(polygon) < 3:
-        return {"status": "error", "message": "At least 3 points required"}
+        raise HTTPException(status_code=400, detail="At least 3 points required for restricted zone polygon")
     updated = live_stream_processor.set_zone_polygon(polygon)
     return {"status": "success", "polygon": updated}
 
-@app.get("/api/stream/source", tags=["stream"])
+@api_router.get("/stream/source", tags=["stream"], dependencies=[Depends(get_current_active_user)])
 def get_stream_source():
     """Returns the current streaming video or webcam source"""
     return live_stream_processor.get_source_info()
 
-@app.post("/api/stream/source", tags=["stream"])
+@api_router.post("/stream/source", tags=["stream"], dependencies=[Depends(get_current_active_user)])
 def set_stream_source(payload: dict):
     """Switches stream source to webcam (0), video file, or IP stream"""
     source = payload.get("source", "test.mp4")
     return live_stream_processor.set_source(source)
 
 # Face Recognition Watchlist API
-@app.get("/api/faces/watchlist", tags=["faces"])
+@api_router.get("/faces/watchlist", tags=["faces"], dependencies=[Depends(get_current_active_user)])
 def get_face_watchlist():
     """Returns loaded known faces and blacklist status"""
     from app.ai.face_engine import face_engine
     return face_engine.get_watchlist()
 
-@app.post("/api/faces/reload", tags=["faces"])
+@api_router.post("/faces/reload", tags=["faces"], dependencies=[Depends(get_current_active_user)])
 def reload_face_watchlist():
     """Reloads known faces database from directory"""
     from app.ai.face_engine import face_engine
@@ -322,7 +324,7 @@ def reload_face_watchlist():
     return {"status": "success", "watchlist": face_engine.get_watchlist()}
 
 # Server-Sent Events (SSE) Alerts Stream
-@app.get("/api/alerts/stream", tags=["stream"])
+@api_router.get("/alerts/stream", tags=["stream"], dependencies=[Depends(get_current_active_user)])
 async def sse_alerts_stream():
     """Server-Sent Events stream for live alerts sidebar"""
     async def event_generator():
@@ -335,7 +337,7 @@ async def sse_alerts_stream():
                     last_sent_time = top_alert.get("timestamp")
                     yield f"data: {json.dumps(top_alert)}\n\n"
             await asyncio.sleep(0.5)
-            
+
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 # WebSocket for real-time events & alerts
@@ -344,12 +346,41 @@ from app.core.websocket import ws_manager
 @app.websocket("/ws/events")
 @app.websocket("/ws/alerts")
 async def websocket_endpoint(websocket: WebSocket):
-    await ws_manager.connect(websocket)
+    requested_protocols = [item.strip() for item in websocket.headers.get("sec-websocket-protocol", "").split(",") if item.strip()]
+    token = None
+    if len(requested_protocols) > 1 and requested_protocols[0] == "ibvap":
+        token = requested_protocols[1]
+    authorization = websocket.headers.get("authorization", "")
+    if not token and authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+    if not token:
+        await websocket.close(code=1008, reason="Authentication required")
+        return
+
+    try:
+        async with AsyncSessionLocal() as session:
+            user = await get_current_user(token=token, db=session)
+            if not user.is_active:
+                await websocket.close(code=1008, reason="Inactive user")
+                return
+    except HTTPException:
+        await websocket.close(code=1008, reason="Invalid session")
+        return
+    except Exception:
+        logger.exception("WebSocket authentication failed due to a server error")
+        await websocket.close(code=1011, reason="Authentication unavailable")
+        return
+
+    await ws_manager.connect(websocket, subprotocol="ibvap" if requested_protocols and requested_protocols[0] == "ibvap" else None)
     try:
         while True:
             data = await websocket.receive_text()
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket)
+
+# `/api` remains available for existing clients. New clients use `/api/v1`.
+app.include_router(api_router, prefix="/api", include_in_schema=False)
+app.include_router(api_router, prefix="/api/v1")
 
 # Serve Compiled React UI
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -380,8 +411,9 @@ async def root():
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
     # Pass through API and stream paths
-    if full_path.startswith("api/") or full_path.startswith("ws/") or full_path.startswith("video_feed") or full_path.startswith("docs") or full_path.startswith("openapi.json") or full_path.startswith("assets/"):
-        return HTMLResponse("Not Found", status_code=404)
+    reserved_prefixes = ("api/", "ws/", "video_feed", "docs", "openapi.json", "assets/")
+    if full_path == "api" or full_path.startswith(reserved_prefixes):
+        raise HTTPException(status_code=404, detail="API route not found")
     if static_dir:
         file_path = os.path.join(static_dir, full_path)
         if os.path.isfile(file_path):

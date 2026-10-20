@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from app.core.security import get_current_user
 from app.services.camera_service import get_camera_health, calculate_health_score, detect_camera_issues
 
-router = APIRouter(prefix="/api/cameras", tags=["cameras"])
+router = APIRouter(prefix="/cameras", tags=["cameras"])
 
 class CameraBase(BaseModel):
     name: str
@@ -48,18 +48,18 @@ async def list_cameras(
     current_user = Depends(get_current_user)
 ):
     cams = [dict(c) for c in MOCK_CAMERAS.values()]
-    
+
     # Enrich with mock health
     for c in cams:
         health = get_camera_health(c["id"])
         c["health_score"] = health["score"]
         c["status"] = "online" if health["stream_active"] else "offline"
-        
+
     if status:
         cams = [c for c in cams if c["status"] == status]
     if zone:
         cams = [c for c in cams if c["zone"] == zone]
-        
+
     return cams[skip : skip + limit]
 
 @router.get("/health/summary")
@@ -69,19 +69,19 @@ async def get_health_summary(current_user = Depends(get_current_user)):
     degraded = 0
     critical = 0
     total_score = 0
-    
+
     for cam_id in MOCK_CAMERAS:
         health = get_camera_health(cam_id)
         score = health["score"]
         total_score += score
-        
+
         if score > 80:
             healthy += 1
         elif score > 50:
             degraded += 1
         else:
             critical += 1
-            
+
     return {
         "average_health": total_score // total if total else 0,
         "total": total,
@@ -107,6 +107,7 @@ async def create_camera(camera: CameraCreate, current_user = Depends(get_current
     return MOCK_CAMERAS[camera.id]
 
 @router.put("/{camera_id}")
+@router.patch("/{camera_id}")
 async def update_camera(camera_id: str, camera: CameraBase, current_user = Depends(get_current_user)):
     if camera_id not in MOCK_CAMERAS:
         raise HTTPException(status_code=404, detail="Camera not found")

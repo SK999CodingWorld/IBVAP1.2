@@ -3,7 +3,7 @@ from typing import Dict, Any, List
 from app.services.edge_simulator import edge_sim
 from app.api.auth import get_current_user
 
-router = APIRouter(prefix="/api/edge", tags=["edge"])
+router = APIRouter(prefix="/edge", tags=["edge"])
 
 @router.get("/status")
 async def get_edge_status(current_user=Depends(get_current_user)):

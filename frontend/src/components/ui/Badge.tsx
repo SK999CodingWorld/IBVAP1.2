@@ -1,5 +1,5 @@
-import * as React from "react"
-import { cn, severityColor } from "@/lib/utils"
+import { cn,severityColor } from "@/lib/utils";
+import * as React from "react";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'critical' | 'high' | 'medium' | 'low' | 'info' | 'success' | 'outline' | 'default' | string;
@@ -17,5 +17,5 @@ function Badge({ className, variant = "info", ...props }: BadgeProps) {
   )
 }
 
-export { Badge }
+export { Badge };
 export default Badge

@@ -1,9 +1,18 @@
-import React, { useRef, useState, useEffect } from 'react';
+import { getAuthenticatedMediaUrl } from '@/api/client';
 import { useVideoStore } from '@/stores/videoStore';
-import { 
-  Maximize2, Camera, Video, AlertCircle, Play, Pause, 
-  Volume2, VolumeX, Shield, AlertTriangle, Upload, Eye, CheckCircle
+import {
+  AlertCircle,
+  AlertTriangle,
+  Camera,
+  CheckCircle,
+  Eye,
+  Maximize2,
+  Pause,
+  Play,
+  Upload,
+  Volume2,VolumeX
 } from 'lucide-react';
+import React,{ useEffect,useRef,useState } from 'react';
 
 interface CameraData {
   id: string;
@@ -26,14 +35,14 @@ interface CameraCardProps {
 }
 
 const FEED_IMAGES: Record<string, string> = {
-  'BOP-01': '/feed-bop01.jpg',
-  'BOP-02': '/feed-bop02.jpg',
-  'BOP-03': '/feed-bop03.jpg',
-  'CHECK-01': '/feed-check01.jpg',
-  'ROAD-01': '/feed-road01.jpg',
-  'ROAD-02': '/feed-road02.jpg',
-  'GATE-01': '/feed-gate01.jpg',
-  'WATCH-01': '/feed-watch01.jpg',
+  'BOP-01': '/camera-perimeter.jpg',
+  'BOP-02': '/camera-checkpoint.jpg',
+  'BOP-03': '/camera-pedestrian.jpg',
+  'CHECK-01': '/camera-checkpoint.jpg',
+  'ROAD-01': '/bg-traffic.jpg',
+  'ROAD-02': '/camera-vehicle.jpg',
+  'GATE-01': '/camera-checkpoint.jpg',
+  'WATCH-01': '/bg-operations.jpg',
 };
 
 // Utility to generate SHA256 string for evidence
@@ -45,18 +54,18 @@ async function computeSha256(str: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-export const CameraCard: React.FC<CameraCardProps> = ({ 
-  camera, 
-  showOverlays = true, 
+export const CameraCard: React.FC<CameraCardProps> = ({
+  camera,
+  showOverlays = true,
   onClick
 }) => {
-  const { 
-    cameraConfigs, 
-    openVideoModal, 
-    openInspection, 
-    togglePlay, 
-    toggleMute, 
-    addEvidence 
+  const {
+    cameraConfigs,
+    openVideoModal,
+    openInspection,
+    togglePlay,
+    toggleMute,
+    addEvidence
   } = useVideoStore();
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -108,7 +117,7 @@ export const CameraCard: React.FC<CameraCardProps> = ({
     e.stopPropagation();
     const video = videoRef.current;
     let dataUrl = '';
-    
+
     if (video) {
       try {
         const canvas = document.createElement('canvas');
@@ -135,7 +144,7 @@ export const CameraCard: React.FC<CameraCardProps> = ({
       time: new Date().toISOString().replace('T', ' ').substring(0, 19),
       hash,
       status: 'VERIFIED',
-      imageUrl: dataUrl || FEED_IMAGES[camera.id] || '/feed-bop01.jpg'
+      imageUrl: dataUrl || FEED_IMAGES[camera.id] || '/camera-perimeter.jpg'
     });
 
     setSnapshotSuccess(true);
@@ -148,15 +157,15 @@ export const CameraCard: React.FC<CameraCardProps> = ({
     setTimeout(() => setAlertTriggered(false), 4000);
   };
 
-  const isMjpegStream = 
-    config?.sourceType === 'webcam' || 
-    Boolean(config?.sourceUrl?.includes('/video_feed')) || 
-    Boolean(config?.sourceUrl?.includes('/stream')) || 
-    Boolean(config?.sourceUrl?.endsWith('.mjpg')) || 
+  const isMjpegStream =
+    config?.sourceType === 'webcam' ||
+    Boolean(config?.sourceUrl?.includes('/video_feed')) ||
+    Boolean(config?.sourceUrl?.includes('/stream')) ||
+    Boolean(config?.sourceUrl?.endsWith('.mjpg')) ||
     Boolean(config?.sourceUrl?.endsWith('.mjpeg'));
 
   return (
-    <div 
+    <div
       className={`relative bg-[#0A0F18] border rounded-xl overflow-hidden flex flex-col group transition-all shadow-xl cursor-pointer ${getAlertRing(camera.alertLevel)}`}
       onClick={onClick}
     >
@@ -188,7 +197,7 @@ export const CameraCard: React.FC<CameraCardProps> = ({
 
       {/* Video Display Area */}
       <div className="flex-grow bg-[#060A10] relative min-h-[190px] aspect-video flex items-center justify-center overflow-hidden">
-        
+
         {/* Support MJPEG live streams, MP4 video elements, and CCTV feeds */}
         {camera.status === 'offline' ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-[#070B12] text-slate-500 font-mono text-xs space-y-2 select-none">
@@ -198,17 +207,17 @@ export const CameraCard: React.FC<CameraCardProps> = ({
           </div>
         ) : config?.sourceUrl && isMjpegStream ? (
           <img
-            src={config.sourceUrl}
+            src={getAuthenticatedMediaUrl(config.sourceUrl)}
             alt={camera.name}
             className="w-full h-full object-cover select-none"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = FEED_IMAGES[camera.id] || '/feed-bop01.jpg';
+              (e.target as HTMLImageElement).src = FEED_IMAGES[camera.id] || '/camera-perimeter.jpg';
             }}
           />
         ) : config?.sourceUrl ? (
           <video
             ref={videoRef}
-            src={config.sourceUrl}
+            src={getAuthenticatedMediaUrl(config.sourceUrl)}
             autoPlay={config.isPlaying}
             loop
             muted={config.isMuted}
@@ -217,9 +226,12 @@ export const CameraCard: React.FC<CameraCardProps> = ({
           />
         ) : (
           <img
-            src={FEED_IMAGES[camera.id] || '/feed-bop01.jpg'}
+            src={FEED_IMAGES[camera.id] || '/camera-perimeter.jpg'}
             alt={camera.name}
             className="w-full h-full object-cover select-none group-hover:scale-105 transition-transform duration-500"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/camera-perimeter.jpg';
+            }}
           />
         )}
 
@@ -240,8 +252,8 @@ export const CameraCard: React.FC<CameraCardProps> = ({
         {/* Dynamic Virtual Fence Polygon Overlay (when custom video stream is playing) */}
         {config?.sourceUrl && config?.showZoneOverlays && camera.status === 'online' && (
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-70">
-            <polygon 
-              points="10,120 180,40 320,110 320,180 10,180" 
+            <polygon
+              points="10,120 180,40 320,110 320,180 10,180"
               className="fill-red-500/15 stroke-red-500 stroke-1 stroke-dasharray-2"
             />
           </svg>
@@ -249,7 +261,7 @@ export const CameraCard: React.FC<CameraCardProps> = ({
 
         {/* Dynamic AI Detection Bounding Boxes (when custom video stream is playing) */}
         {config?.sourceUrl && showOverlays && config?.showAiOverlays && camera.status === 'online' && activeBoxes.map((bbox, i) => (
-          <div 
+          <div
             key={bbox.id || i}
             className="absolute border-2 border-cyan-400 bg-cyan-400/15 shadow-sm transition-all duration-700 pointer-events-none z-10"
             style={{
@@ -291,7 +303,7 @@ export const CameraCard: React.FC<CameraCardProps> = ({
 
           {/* Center Play / Pause and Tools */}
           <div className="flex items-center justify-center gap-2">
-            <button 
+            <button
               className="p-2.5 bg-slate-800/90 hover:bg-slate-700 rounded-full text-white transition-all shadow hover:scale-105"
               onClick={(e) => { e.stopPropagation(); togglePlay(camera.id); }}
               title={config?.isPlaying ? "Pause Stream" : "Play Stream"}
@@ -299,7 +311,7 @@ export const CameraCard: React.FC<CameraCardProps> = ({
               {config?.isPlaying ? <Pause size={16} /> : <Play size={16} />}
             </button>
 
-            <button 
+            <button
               className="p-2.5 bg-emerald-700/90 hover:bg-emerald-600 rounded-full text-white transition-all shadow hover:scale-105"
               onClick={handleCaptureSnapshot}
               title="Capture Evidence Snapshot"
@@ -307,7 +319,7 @@ export const CameraCard: React.FC<CameraCardProps> = ({
               <Camera size={16} />
             </button>
 
-            <button 
+            <button
               className="p-2.5 bg-red-700/90 hover:bg-red-600 rounded-full text-white transition-all shadow hover:scale-105"
               onClick={handleTriggerAlert}
               title="Trigger Simulated Threat Alert"
@@ -315,7 +327,7 @@ export const CameraCard: React.FC<CameraCardProps> = ({
               <AlertTriangle size={16} />
             </button>
 
-            <button 
+            <button
               className="p-2.5 bg-cyan-700/90 hover:bg-cyan-600 rounded-full text-white transition-all shadow hover:scale-105"
               onClick={(e) => { e.stopPropagation(); openInspection(camera.id); }}
               title="Tactical Fullscreen Inspection"
@@ -326,7 +338,7 @@ export const CameraCard: React.FC<CameraCardProps> = ({
 
           {/* Bottom Mute & Info */}
           <div className="flex justify-between items-center text-[10px] text-slate-300">
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); toggleMute(camera.id); }}
               className="flex items-center gap-1 hover:text-white bg-black/60 px-2 py-1 rounded"
             >

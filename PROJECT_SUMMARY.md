@@ -1,4 +1,6 @@
-# IBVAP — Complete Project Summary
+# IBVAP — Project Summary
+
+> This feature catalogue is a historical snapshot. For the maintained source layout and runtime conventions, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Project Overview
 
@@ -44,58 +46,9 @@
 - **Nginx** — Reverse proxy & static file serving
 - **K3s** — Lightweight Kubernetes (edge deployment)
 
-## Project Structure
+## Maintained Source Layout
 
-```
-ibvap-project/
-├── main.py                    # FastAPI application entry point
-├── run.py                     # Development runner (api/detector/tracker/docker)
-├── docker-compose.yml         # Full stack deployment
-├── Dockerfile / Dockerfile.detector
-├── requirements.txt           # Python dependencies
-├── zones.json                 # Zone configurations (polygon, line, circle)
-├── .env.example               # Environment template
-├── TECH_DESIGN.md             # Technical design document
-├── README.md                  # User documentation
-│
-├── services/                  # Microservices (Phase 1-3)
-│   ├── stream_ingest/         # Camera management + FFmpeg RTSP ingestion
-│   ├── detection_worker/      # YOLOv8 inference (GPU-accelerated)
-│   ├── tracking_service/      # BoT-SORT tracking + zone logic
-│   ├── alert_engine/          # Rule-based alerting with cooldown/dedup
-│   ├── camera_registry/       # Camera CRUD + JSON persistence
-│   ├── recording_service/     # Circular buffer + event clips + evidence export
-│   ├── ptz_control/           # ONVIF PTZ control (presets, absolute/relative)
-│   └── analytics/
-│       ├── anpr_worker/       # License plate detection + OCR
-│       ├── face_worker/       # Face detection + recognition (watchlist)
-│       ├── behavior_worker/   # Pose estimation (running, loitering, falls)
-│       └── night_enhance/     # Retinex/gamma/CLAHE night enhancement
-│
-├── shared/                    # Shared libraries
-│   ├── schemas/               # Pydantic models (Camera, Detection, Track, Alert, Zone, Event)
-│   ├── messaging/             # Redis Streams + PubSub
-│   ├── config/                # Pydantic Settings management
-│   └── utils/                 # Vision helpers (drawing, geometry, NMS, zones)
-│
-├── tests/                     # Unit & integration tests
-│   └── unit/                  # Zone logic, detection schemas
-│
-├── deploy/                    # Deployment configs
-│   ├── scripts/
-│   │   ├── install.sh         # Production installer (Ubuntu/Debian/RHEL)
-│   │   └── backup.sh          # Automated backup script
-│   └── kubernetes/            # K3s manifests (planned)
-│
-└── dashboard/                 # React + TypeScript + Vite (Phase 4)
-    ├── src/
-    │   ├── pages/             # Dashboard, Cameras, Alerts, Recordings, Map, PTZ, Settings
-    │   ├── components/        # Layout, UI components (Card, etc.)
-    │   ├── hooks/             # React hooks for data fetching
-    │   ├── api/               # Axios client + TypeScript types
-    │   └── lib/               # Utilities
-    └── public/
-```
+The supported React source is `frontend/`; the active FastAPI application is `backend/app/`, launched by `run.py`. The API is registered under `/api/v1` and retains `/api` aliases for existing clients. The old parallel `dashboard/` source and duplicate backend environment template were removed. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for current module responsibilities and conventions.
 
 ## Key Features Implemented
 

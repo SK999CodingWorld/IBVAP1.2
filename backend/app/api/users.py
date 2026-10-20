@@ -9,7 +9,7 @@ from app.models.user import User
 from app.schemas.auth import UserResponse
 from pydantic import BaseModel, EmailStr
 
-router = APIRouter(prefix="/api/users", tags=["users"])
+router = APIRouter(prefix="/users", tags=["users"])
 
 class UserCreate(BaseModel):
     username: str
@@ -43,7 +43,7 @@ async def create_user(
     result = await db.execute(query)
     if result.scalars().first():
         raise HTTPException(status_code=400, detail="Username or email already registered")
-        
+
     hashed_password = get_password_hash(user_in.password)
     new_user = User(
         username=user_in.username,
@@ -68,11 +68,11 @@ async def update_user(
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-        
+
     update_data = user_in.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(user, key, value)
-        
+
     await db.commit()
     await db.refresh(user)
     return user
@@ -87,6 +87,6 @@ async def delete_user(
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-        
+
     await db.delete(user)
     await db.commit()

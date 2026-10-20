@@ -1,12 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Activity, Clock, Map, MapPin, Navigation, Info, 
-  Video, Eye, ShieldCheck, ChevronRight, User, Car, 
-  Maximize2, Play, Layers, Compass, Search, Filter,
-  Crosshair, Radio, ShieldAlert, CheckCircle2, X,
-  Sliders, RefreshCw, ZoomIn, ZoomOut, ArrowUp, ArrowDown,
-  ArrowLeft, ArrowRight, Download, Award, AlertTriangle
+import { trackingService } from '@/api';
+import {
+  ArrowDown,
+  ArrowLeft,ArrowRight,
+  ArrowUp,
+  Car,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Compass,
+  Crosshair,
+  Download,
+  Info,
+  Layers,
+  MapPin,Navigation,
+  Radio,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+  User,
+  X
 } from 'lucide-react';
+import { useEffect,useState } from 'react';
 
 interface CameraHop {
   id: string;
@@ -41,9 +55,9 @@ const DEFAULT_CROSS_TRACKS: CrossTrack[] = [
     confidence: 96.4,
     reidSignature: 'Dark jacket, tactical backpack, olive trousers',
     cameras: [
-      { id: 'BOP-01', name: 'Main Gate Cam 01', time: '10:35:12', duration: '45s', image: '/thumb-cam-bop01.jpg', confidence: 98.1, status: 'Complete' },
-      { id: 'ROAD-02', name: 'Approach Road South', time: '10:38:20', duration: '2m 10s', image: '/health-cam-road02.jpg', confidence: 95.8, status: 'Complete' },
-      { id: 'BOP-03', name: 'Perimeter West PTZ', time: '10:41:55', duration: 'Active (Now)', image: '/feed-bop01.jpg', confidence: 97.2, status: 'Active' },
+      { id: 'BOP-01', name: 'Main Gate Cam 01', time: '10:35:12', duration: '45s', image: '/camera-perimeter.jpg', confidence: 98.1, status: 'Complete' },
+      { id: 'ROAD-02', name: 'Approach Road South', time: '10:38:20', duration: '2m 10s', image: '/camera-vehicle.jpg', confidence: 95.8, status: 'Complete' },
+      { id: 'BOP-03', name: 'Perimeter West PTZ', time: '10:41:55', duration: 'Active (Now)', image: '/camera-perimeter.jpg', confidence: 97.2, status: 'Active' },
     ]
   },
   {
@@ -56,8 +70,8 @@ const DEFAULT_CROSS_TRACKS: CrossTrack[] = [
     confidence: 94.2,
     reidSignature: 'White 4x4, reinforced bullbar, heavy dust coating',
     cameras: [
-      { id: 'ROAD-01', name: 'Approach Road North', time: '10:30:00', duration: '5m', image: '/feed-road01.jpg', confidence: 96.5, status: 'Complete' },
-      { id: 'CHECK-01', name: 'Checkpoint Alpha', time: '10:41:15', duration: 'Active (Now)', image: '/feed-check01.jpg', confidence: 95.0, status: 'Active' },
+      { id: 'ROAD-01', name: 'Approach Road North', time: '10:30:00', duration: '5m', image: '/bg-traffic.jpg', confidence: 96.5, status: 'Complete' },
+      { id: 'CHECK-01', name: 'Checkpoint Alpha', time: '10:41:15', duration: 'Active (Now)', image: '/camera-checkpoint.jpg', confidence: 95.0, status: 'Active' },
     ]
   },
   {
@@ -70,22 +84,22 @@ const DEFAULT_CROSS_TRACKS: CrossTrack[] = [
     confidence: 99.0,
     reidSignature: 'Standard issue camouflage, marked radio harness',
     cameras: [
-      { id: 'BOP-02', name: 'Perimeter East Cam', time: '10:15:00', duration: '12m', image: '/thumb-cam-bop02.jpg', confidence: 99.2, status: 'Complete' },
-      { id: 'WATCH-01', name: 'Watchtower 7 Optical', time: '10:32:00', duration: 'Active (Now)', image: '/feed-watch01.jpg', confidence: 98.8, status: 'Active' },
+      { id: 'BOP-02', name: 'Perimeter East Cam', time: '10:15:00', duration: '12m', image: '/camera-checkpoint.jpg', confidence: 99.2, status: 'Complete' },
+      { id: 'WATCH-01', name: 'Watchtower 7 Optical', time: '10:32:00', duration: 'Active (Now)', image: '/bg-operations.jpg', confidence: 98.8, status: 'Active' },
     ]
   }
 ];
 
 const CAMERA_METADATA: Record<string, { name: string; zone: string; image: string }> = {
-  'CAM-01': { name: 'BOP Sector 4 North PTZ', zone: 'Sector 4 Red Perimeter', image: '/feed-bop01.jpg' },
-  'BOP-01': { name: 'Main Gate Access Cam 01', zone: 'Sector 4 Perimeter Alpha', image: '/thumb-cam-bop01.jpg' },
-  'BOP-02': { name: 'Perimeter East Outpost Cam', zone: 'Sector 2 Approach North', image: '/thumb-cam-bop02.jpg' },
-  'BOP-03': { name: 'Perimeter West Optical PTZ', zone: 'Sector 4 Buffer West', image: '/feed-bop01.jpg' },
-  'ROAD-01': { name: 'Approach Road North Optical', zone: 'Highway Transit Sector', image: '/feed-road01.jpg' },
-  'ROAD-02': { name: 'Approach Road South Optical', zone: 'Highway 1 Access Road', image: '/health-cam-road02.jpg' },
-  'CHECK-01': { name: 'Highway Checkpoint Alpha ANPR', zone: 'Highway 1 Checkpoint Alpha', image: '/feed-check01.jpg' },
-  'GATE-01': { name: 'HQ Base Camp Perimeter Gate', zone: 'HQ Base Camp Perimeter', image: '/thumb-cam-bop02.jpg' },
-  'WATCH-01': { name: 'Watchtower 7 Optical Sensor', zone: 'Watchtower 7 Sector', image: '/feed-watch01.jpg' },
+  'CAM-01': { name: 'BOP Sector 4 North PTZ', zone: 'Sector 4 Red Perimeter', image: '/camera-perimeter.jpg' },
+  'BOP-01': { name: 'Main Gate Access Cam 01', zone: 'Sector 4 Perimeter Alpha', image: '/camera-perimeter.jpg' },
+  'BOP-02': { name: 'Perimeter East Outpost Cam', zone: 'Sector 2 Approach North', image: '/camera-checkpoint.jpg' },
+  'BOP-03': { name: 'Perimeter West Optical PTZ', zone: 'Sector 4 Buffer West', image: '/camera-perimeter.jpg' },
+  'ROAD-01': { name: 'Approach Road North Optical', zone: 'Highway Transit Sector', image: '/bg-traffic.jpg' },
+  'ROAD-02': { name: 'Approach Road South Optical', zone: 'Highway 1 Access Road', image: '/camera-vehicle.jpg' },
+  'CHECK-01': { name: 'Highway Checkpoint Alpha ANPR', zone: 'Highway 1 Checkpoint Alpha', image: '/camera-checkpoint.jpg' },
+  'GATE-01': { name: 'HQ Base Camp Perimeter Gate', zone: 'HQ Base Camp Perimeter', image: '/camera-checkpoint.jpg' },
+  'WATCH-01': { name: 'Watchtower 7 Optical Sensor', zone: 'Watchtower 7 Sector', image: '/bg-operations.jpg' },
 };
 
 export const MultiCameraTracking = () => {
@@ -95,8 +109,7 @@ export const MultiCameraTracking = () => {
   const [filterType, setFilterType] = useState<'all' | 'person' | 'vehicle'>('all');
   const [isLoading, setIsLoading] = useState(false);
   const [isAutoSync, setIsAutoSync] = useState(true);
-  const [lastSyncTime, setLastSyncTime] = useState<string>('Live');
-  
+
   // Tactical Modals
   const [showPtzModal, setShowPtzModal] = useState(false);
   const [ptzState, setPtzState] = useState({ pan: 142.4, tilt: -12.8, zoom: 3.5 });
@@ -109,18 +122,18 @@ export const MultiCameraTracking = () => {
   const fetchLiveTracks = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/tracks');
+      const res = await trackingService.list();
       if (res.ok) {
         const json = await res.json();
         if (json.data && Array.isArray(json.data) && json.data.length > 0) {
           const liveList: CrossTrack[] = json.data.map((item: any, idx: number) => {
-            const camHist: string[] = item.camera_history && item.camera_history.length > 0 
-              ? item.camera_history 
+            const camHist: string[] = item.camera_history && item.camera_history.length > 0
+              ? item.camera_history
               : [item.last_seen_cam || 'CAM-01'];
-            
+
             const lastCam = camHist[camHist.length - 1];
-            const meta = CAMERA_METADATA[lastCam] || { name: `Sector Outpost ${lastCam}`, zone: `Perimeter Zone ${lastCam}`, image: '/feed-bop01.jpg' };
-            
+            const meta = CAMERA_METADATA[lastCam] || { name: `Sector Outpost ${lastCam}`, zone: `Perimeter Zone ${lastCam}`, image: '/camera-perimeter.jpg' };
+
             return {
               id: item.global_id || `GLOBAL-${idx + 1}`,
               type: 'person',
@@ -131,7 +144,7 @@ export const MultiCameraTracking = () => {
               confidence: item.confidence || 95.2,
               reidSignature: `OSNet 256-D Prototype · ${item.detection_count || 120} frame signatures matched · Peak: ${item.peak_confidence || 98}%`,
               cameras: camHist.map((cam: string, cIdx: number) => {
-                const cMeta = CAMERA_METADATA[cam] || { name: `Sector Outpost ${cam}`, zone: `Perimeter ${cam}`, image: '/feed-bop01.jpg' };
+                const cMeta = CAMERA_METADATA[cam] || { name: `Sector Outpost ${cam}`, zone: `Perimeter ${cam}`, image: '/camera-perimeter.jpg' };
                 const isActive = cIdx === camHist.length - 1;
                 return {
                   id: cam,
@@ -146,14 +159,13 @@ export const MultiCameraTracking = () => {
             };
           });
 
-          setCrossTracks(prev => {
+          setCrossTracks(() => {
             const merged = [...liveList];
             DEFAULT_CROSS_TRACKS.forEach(def => {
               if (!merged.find(m => m.id === def.id)) merged.push(def);
             });
             return merged;
           });
-          setLastSyncTime(new Date().toLocaleTimeString());
         }
       }
     } catch (e) {
@@ -228,7 +240,7 @@ export const MultiCameraTracking = () => {
 
   return (
     <div className="p-4 md:p-6 h-full flex flex-col bg-[#070B12] text-slate-200 overflow-y-auto space-y-5">
-      
+
       {/* Toast Notification */}
       {actionNotification && (
         <div className="fixed top-5 right-5 z-50 bg-[#0E1726] border border-cyan-500/50 shadow-2xl shadow-cyan-500/20 text-white px-4 py-3 rounded-xl flex items-center gap-3 backdrop-blur-md animate-in fade-in slide-in-from-top-4">
@@ -258,8 +270,8 @@ export const MultiCameraTracking = () => {
           <button
             onClick={() => setIsAutoSync(!isAutoSync)}
             className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all ${
-              isAutoSync 
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
+              isAutoSync
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                 : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
             }`}
           >
@@ -267,7 +279,7 @@ export const MultiCameraTracking = () => {
             <span>{isAutoSync ? 'LIVE SYNC (3.5s)' : 'SYNC PAUSED'}</span>
           </button>
 
-          <button 
+          <button
             onClick={fetchLiveTracks}
             disabled={isLoading}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0B1524] hover:bg-[#0f1f38] border border-cyan-500/30 rounded-lg text-cyan-400 text-xs font-mono transition-colors"
@@ -294,10 +306,10 @@ export const MultiCameraTracking = () => {
 
       {/* Main Grid: Target Selector & Profile (Left) / Trajectory Sequence (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        
+
         {/* Left Column: Target Selector & Profile (4 Cols) */}
         <div className="lg:col-span-4 space-y-4">
-          
+
           {/* Target List Card */}
           <div className="bg-[#0B111B] border border-slate-800/90 rounded-xl p-4 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
@@ -310,7 +322,7 @@ export const MultiCameraTracking = () => {
             <div className="space-y-2">
               <div className="relative">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500" />
-                <input 
+                <input
                   type="text"
                   placeholder="Filter targets, IDs, signatures..."
                   value={searchTerm}
@@ -324,8 +336,8 @@ export const MultiCameraTracking = () => {
                     key={type}
                     onClick={() => setFilterType(type)}
                     className={`flex-1 py-1 text-[11px] font-mono rounded capitalize transition-colors ${
-                      filterType === type 
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold' 
+                      filterType === type
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
                         : 'bg-[#080E18] text-slate-400 border border-slate-800 hover:text-slate-200'
                     }`}
                   >
@@ -428,11 +440,11 @@ export const MultiCameraTracking = () => {
           {/* Sequential Hops Cards */}
           <div className="space-y-4">
             {track.cameras.map((hop, index) => (
-              <div 
-                key={hop.id + index} 
+              <div
+                key={hop.id + index}
                 className={`p-4 rounded-xl border relative transition-all ${
-                  hop.status === 'Active' 
-                    ? 'bg-[#0B1626] border-cyan-500/50 shadow-lg shadow-cyan-500/10' 
+                  hop.status === 'Active'
+                    ? 'bg-[#0B1626] border-cyan-500/50 shadow-lg shadow-cyan-500/10'
                     : 'bg-[#080E18] border-slate-800'
                 }`}
               >
@@ -444,8 +456,8 @@ export const MultiCameraTracking = () => {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
                   <div className="flex items-center gap-3.5">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                      hop.status === 'Active' 
-                        ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30' 
+                      hop.status === 'Active'
+                        ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/30'
                         : 'bg-slate-800 text-slate-300'
                     }`}>
                       {index + 1}
@@ -453,9 +465,9 @@ export const MultiCameraTracking = () => {
 
                     {/* Camera Thumbnail */}
                     <div className="w-20 h-14 rounded-lg overflow-hidden border border-slate-700 relative flex-shrink-0 bg-slate-900">
-                      <img 
-                        src={hop.image} 
-                        alt={hop.name} 
+                      <img
+                        src={hop.image}
+                        alt={hop.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           (e.target as HTMLElement).style.display = 'none';
@@ -480,8 +492,8 @@ export const MultiCameraTracking = () => {
 
                   <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                      hop.status === 'Active' 
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse' 
+                      hop.status === 'Active'
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse'
                         : 'bg-slate-800 text-slate-400 border border-slate-700'
                     }`}>
                       {hop.status}
@@ -501,7 +513,7 @@ export const MultiCameraTracking = () => {
               Correlated with <span className="text-white font-bold">ByteTrack Multi-Target Filter v2.4</span>
             </div>
             <div className="flex flex-wrap items-center gap-2 font-mono">
-              <button 
+              <button
                 onClick={() => handleExportDossier(track)}
                 className="px-3 py-1.5 bg-[#0F1726] hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold rounded-lg text-xs transition-colors flex items-center gap-1.5"
               >
@@ -509,7 +521,7 @@ export const MultiCameraTracking = () => {
                 <span>Export Dossier</span>
               </button>
 
-              <button 
+              <button
                 onClick={() => setShowDispatchModal(true)}
                 className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/40 font-bold rounded-lg text-xs transition-colors flex items-center gap-1.5"
               >
@@ -517,7 +529,7 @@ export const MultiCameraTracking = () => {
                 <span>Dispatch Intercept</span>
               </button>
 
-              <button 
+              <button
                 onClick={() => setShowPtzModal(true)}
                 className="px-3.5 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-lg text-xs transition-colors shadow-md shadow-cyan-500/20 flex items-center gap-2"
               >
@@ -544,7 +556,7 @@ export const MultiCameraTracking = () => {
                   <p className="text-[10px] text-cyan-400 font-mono">Camera: BOP-03 (Perimeter West PTZ)</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setShowPtzModal(false)}
                 className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
               >
@@ -591,14 +603,14 @@ export const MultiCameraTracking = () => {
             <div className="bg-[#070D16] p-4 rounded-xl border border-slate-800 flex flex-col items-center gap-2">
               <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider mb-1">Fine Slew Overrides</div>
               <div className="flex flex-col items-center gap-2">
-                <button 
+                <button
                   onClick={() => setPtzState(s => ({ ...s, tilt: Math.min(60, s.tilt + 2) }))}
                   className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200"
                 >
                   <ArrowUp className="w-4 h-4" />
                 </button>
                 <div className="flex items-center gap-4">
-                  <button 
+                  <button
                     onClick={() => setPtzState(s => ({ ...s, pan: (s.pan - 2 + 360) % 360 }))}
                     className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200"
                   >
@@ -607,14 +619,14 @@ export const MultiCameraTracking = () => {
                   <div className="w-8 h-8 rounded-full border border-cyan-500/40 flex items-center justify-center text-cyan-400">
                     <Crosshair className="w-4 h-4" />
                   </div>
-                  <button 
+                  <button
                     onClick={() => setPtzState(s => ({ ...s, pan: (s.pan + 2) % 360 }))}
                     className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200"
                   >
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
-                <button 
+                <button
                   onClick={() => setPtzState(s => ({ ...s, tilt: Math.max(-60, s.tilt - 2) }))}
                   className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200"
                 >
@@ -625,7 +637,7 @@ export const MultiCameraTracking = () => {
 
             {/* Actions */}
             <div className="flex items-center justify-end gap-2.5 pt-2">
-              <button 
+              <button
                 onClick={() => {
                   setShowPtzModal(false);
                   showToast(`PTZ Tracking disengaged. Camera BOP-03 returned to orbit patrol.`);
@@ -634,7 +646,7 @@ export const MultiCameraTracking = () => {
               >
                 Disengage & Park
               </button>
-              <button 
+              <button
                 onClick={() => {
                   setShowPtzModal(false);
                   showToast(`PTZ locked continuously on ${track.id} (${track.label}) at ${ptzState.pan.toFixed(1)}° pan / ${ptzState.tilt.toFixed(1)}° tilt.`);
@@ -660,7 +672,7 @@ export const MultiCameraTracking = () => {
                   <p className="text-[10px] text-slate-400 font-mono">Target: {track.id} • OSNet ResNet-IBN Architecture</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setShowVectorModal(false)}
                 className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
               >
@@ -697,7 +709,7 @@ export const MultiCameraTracking = () => {
             </div>
 
             <div className="flex justify-end pt-2">
-              <button 
+              <button
                 onClick={() => setShowVectorModal(false)}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono rounded-lg"
               >
@@ -722,7 +734,7 @@ export const MultiCameraTracking = () => {
                   <p className="text-[10px] text-red-400 font-mono">High-Priority Quick Reaction Force (QRT) Mandate</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setShowDispatchModal(false)}
                 className="text-slate-400 hover:text-white"
               >

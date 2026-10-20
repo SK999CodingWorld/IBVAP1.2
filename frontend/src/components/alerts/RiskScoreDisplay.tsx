@@ -1,5 +1,4 @@
-import React from 'react';
-import { AlertTriangle, Clock, Activity, Users, FileText, Info } from 'lucide-react';
+import { Activity,AlertTriangle,Clock,Info,Users } from 'lucide-react';
 
 interface RiskFactor {
   name: string;
@@ -78,10 +77,10 @@ export function RiskScoreDisplay({ score, factors = [], expanded = false }: Risk
                   {factor.score > 0 ? '+' : ''}{factor.score}
                 </span>
               </div>
-              
+
               {/* Visual Bar */}
               <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div 
+                <div
                   className={`h-full ${factor.score > 0 ? 'bg-amber-500' : 'bg-green-500'}`}
                   style={{ width: `${Math.min(Math.abs(factor.score), 100)}%` }}
                 />
@@ -89,7 +88,7 @@ export function RiskScoreDisplay({ score, factors = [], expanded = false }: Risk
               <p className="text-xs text-slate-500">{factor.description}</p>
             </div>
           ))}
-          
+
           <div className="flex justify-between items-center pt-2 mt-2 border-t border-slate-700 font-bold">
             <span className="text-slate-300">Total Score</span>
             <span className={colorClass}>{score} / 100</span>

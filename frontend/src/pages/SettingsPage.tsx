@@ -1,13 +1,16 @@
-import { useState } from 'react';
-import { 
-  Settings, Cpu, Bell, Sliders, Globe, Save, AlertCircle, Eye, Moon, 
-  MonitorPlay, ShieldCheck, CheckCircle2, SlidersHorizontal, HardDrive,
-  Radio, Volume2, Key, Database, RefreshCw, Sparkles, Check
+import {
+  Bell,
+  Check,
+  Cpu,
+  Database,
+  Globe,Save,
+  Settings,
+  SlidersHorizontal
 } from 'lucide-react';
-import { ApiKeySection } from '../components/security/ApiKeySection';
+import { useState } from 'react';
 
 export const SettingsPage = () => {
-  const [activeTab, setActiveTab] = useState<'general' | 'ai' | 'thresholds' | 'notifications' | 'environment' | 'apikeys'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'ai' | 'thresholds' | 'notifications' | 'environment'>('general');
   const [hasChanges, setHasChanges] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -23,7 +26,6 @@ export const SettingsPage = () => {
     { id: 'general', label: 'General', icon: <Settings className="w-4 h-4 mr-2" /> },
     { id: 'ai', label: 'AI Configuration', icon: <Cpu className="w-4 h-4 mr-2" /> },
     { id: 'thresholds', label: 'Thresholds', icon: <SlidersHorizontal className="w-4 h-4 mr-2" /> },
-    { id: 'apikeys', label: 'API Keys & Integrations', icon: <Key className="w-4 h-4 mr-2 text-cyan-400" /> },
     { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4 mr-2" /> },
     { id: 'environment', label: 'Environment', icon: <Globe className="w-4 h-4 mr-2" /> },
   ];
@@ -41,7 +43,7 @@ export const SettingsPage = () => {
 
   return (
     <div className="p-4 md:p-6 space-y-5 h-full overflow-y-auto bg-[#070B12] text-slate-200">
-      
+
       {/* Top Header Card */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0A0F18]/90 border border-slate-800/80 p-4 rounded-xl shadow-lg backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -55,7 +57,7 @@ export const SettingsPage = () => {
             <p className="text-slate-400 text-xs">Configure platform behavior, AI inference pipeline, and operational thresholds</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           {savedSuccess && (
             <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-mono">
@@ -63,12 +65,12 @@ export const SettingsPage = () => {
             </div>
           )}
 
-          <button 
+          <button
             disabled={!hasChanges}
             onClick={handleSave}
             className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-md ${
-              hasChanges 
-                ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-500/25 cursor-pointer' 
+              hasChanges
+                ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-500/25 cursor-pointer'
                 : 'bg-slate-800/60 text-slate-500 border border-slate-700/50 cursor-not-allowed'
             }`}
           >
@@ -84,8 +86,8 @@ export const SettingsPage = () => {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={`flex items-center px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-t-lg transition-all border-b-2 whitespace-nowrap ${
-              activeTab === tab.id 
-                ? 'border-cyan-400 text-cyan-400 bg-cyan-500/5' 
+              activeTab === tab.id
+                ? 'border-cyan-400 text-cyan-400 bg-cyan-500/5'
                 : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/30'
             }`}
           >
@@ -97,7 +99,7 @@ export const SettingsPage = () => {
 
       {/* Main Settings Card */}
       <div className="max-w-5xl">
-        
+
         {/* General Settings */}
         {activeTab === 'general' && (
           <div className="bg-[#0B111B] border border-slate-800/90 rounded-xl p-5 shadow-sm space-y-6">
@@ -111,17 +113,17 @@ export const SettingsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
               <div className="space-y-1.5">
                 <label className="font-semibold text-slate-300">System Name</label>
-                <input 
-                  type="text" 
-                  defaultValue="IBVAP - Intelligent Border Video Analytics Platform" 
+                <input
+                  type="text"
+                  defaultValue="IBVAP - Intelligent Border Video Analytics Platform"
                   onChange={markDirty}
                   className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-500 font-sans"
                 />
               </div>
-              
+
               <div className="space-y-1.5">
                 <label className="font-semibold text-slate-300">Display Theme</label>
-                <select 
+                <select
                   defaultValue="dark"
                   onChange={markDirty}
                   className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 font-sans"
@@ -134,7 +136,7 @@ export const SettingsPage = () => {
 
               <div className="space-y-1.5">
                 <label className="font-semibold text-slate-300">Language</label>
-                <select 
+                <select
                   defaultValue="en"
                   onChange={markDirty}
                   className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
@@ -146,7 +148,7 @@ export const SettingsPage = () => {
 
               <div className="space-y-1.5">
                 <label className="font-semibold text-slate-300">Timezone Synchronization</label>
-                <select 
+                <select
                   defaultValue="ist"
                   onChange={markDirty}
                   className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
@@ -158,7 +160,7 @@ export const SettingsPage = () => {
 
               <div className="space-y-1.5">
                 <label className="font-semibold text-slate-300">Video Hardware Decoder</label>
-                <select 
+                <select
                   value={selectedCodec}
                   onChange={(e) => { setSelectedCodec(e.target.value); markDirty(); }}
                   className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
@@ -171,7 +173,7 @@ export const SettingsPage = () => {
 
               <div className="space-y-1.5">
                 <label className="font-semibold text-slate-300">Stream Buffer Depth</label>
-                <select 
+                <select
                   defaultValue="low"
                   onChange={markDirty}
                   className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
@@ -224,7 +226,7 @@ export const SettingsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 <div className="space-y-1.5">
                   <label className="font-semibold text-slate-300">Active Object Detection Backbone</label>
-                  <select 
+                  <select
                     value={activeModel}
                     onChange={(e) => { setActiveModel(e.target.value); markDirty(); }}
                     className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
@@ -238,7 +240,7 @@ export const SettingsPage = () => {
 
                 <div className="space-y-1.5">
                   <label className="font-semibold text-slate-300">Edge Downsampling Frame Skip (N)</label>
-                  <select 
+                  <select
                     value={frameSkip}
                     onChange={(e) => { setFrameSkip(Number(e.target.value)); markDirty(); }}
                     className="w-full bg-[#080E18] border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
@@ -269,9 +271,9 @@ export const SettingsPage = () => {
                   <span className="font-bold text-white">Global AI Confidence Discard Threshold</span>
                   <span className="font-mono text-cyan-400 font-bold text-sm">{confidence}%</span>
                 </div>
-                <input 
-                  type="range" 
-                  min="30" max="95" 
+                <input
+                  type="range"
+                  min="30" max="95"
                   value={confidence}
                   onChange={(e) => { setConfidence(Number(e.target.value)); markDirty(); }}
                   className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
@@ -284,8 +286,8 @@ export const SettingsPage = () => {
                   <span className="font-bold text-white">Loitering Dwell Trigger Duration</span>
                   <span className="font-mono text-amber-400 font-bold text-sm">{loiteringSec} seconds</span>
                 </div>
-                <input 
-                  type="range" 
+                <input
+                  type="range"
                   min="5" max="120" step="5"
                   value={loiteringSec}
                   onChange={(e) => { setLoiteringSec(Number(e.target.value)); markDirty(); }}
@@ -299,9 +301,9 @@ export const SettingsPage = () => {
                   <span className="font-bold text-white">Restricted Zone Crowd Overcrowding Limit</span>
                   <span className="font-mono text-red-400 font-bold text-sm">{crowdLimit} persons</span>
                 </div>
-                <input 
-                  type="range" 
-                  min="2" max="25" 
+                <input
+                  type="range"
+                  min="2" max="25"
                   value={crowdLimit}
                   onChange={(e) => { setCrowdLimit(Number(e.target.value)); markDirty(); }}
                   className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-400"
@@ -360,11 +362,6 @@ export const SettingsPage = () => {
               </div>
             </div>
           </div>
-        )}
-
-        {/* API Keys & External Integrations */}
-        {activeTab === 'apikeys' && (
-          <ApiKeySection />
         )}
 
       </div>

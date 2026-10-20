@@ -5,7 +5,6 @@ import time
 from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime
 from collections import defaultdict
-from ultralytics import YOLO
 import numpy as np
 
 from shared.config.settings import settings

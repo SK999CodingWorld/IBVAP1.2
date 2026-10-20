@@ -6,7 +6,7 @@ import time
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 
-router = APIRouter(prefix="/api/security", tags=["security"])
+router = APIRouter(prefix="/security", tags=["security"])
 
 class CreateApiKeyRequest(BaseModel):
     name: str
@@ -261,10 +261,10 @@ async def create_api_key(payload: CreateApiKeyRequest):
     prefix = f"ibvap_live_{random_secret[:4]}"
     full_key = f"{prefix}_{random_secret[4:]}"
     masked_key = f"{prefix}••••••••••••{random_secret[-4:]}"
-    
+
     expires_date = (datetime.utcnow() + timedelta(days=payload.expires_in_days or 90)).isoformat()
     new_id = f"key_{secrets.token_hex(4)}"
-    
+
     key_entry = {
         "id": new_id,
         "name": payload.name,
@@ -277,9 +277,9 @@ async def create_api_key(payload: CreateApiKeyRequest):
         "rate_limit": payload.rate_limit or 60,
         "expires_at": expires_date
     }
-    
+
     MOCK_API_KEYS.insert(0, key_entry)
-    
+
     return {
         "status": "success",
         "message": "API key generated successfully. Copy your key now as it will not be displayed again.",
@@ -323,9 +323,9 @@ async def test_api_key_endpoint(payload: TestApiKeyRequest):
     t0 = time.time()
     # Simple validation
     is_valid_prefix = payload.key_token.startswith("ibvap_live_") or "sample" in payload.key_token.lower()
-    
+
     latency = round(random.uniform(4.5, 14.8), 1)
-    
+
     if not is_valid_prefix:
         return {
             "status": "error",
@@ -337,7 +337,7 @@ async def test_api_key_endpoint(payload: TestApiKeyRequest):
                 "detail": "Provided Bearer token signature could not be verified against the Border Key Ring."
             }
         }
-    
+
     # Return simulated mock payload matching requested endpoint
     endpoint = payload.endpoint.lower()
     if "camera" in endpoint:
@@ -430,7 +430,7 @@ async def test_integration_connection(int_id: str):
     target = next((i for i in MOCK_INTEGRATIONS if i["id"] == int_id), None)
     if not target:
         raise HTTPException(status_code=404, detail="Integration not found")
-    
+
     measured_ping = random.randint(4, 28)
     target["ping_ms"] = measured_ping
     target["last_sync"] = "Just now"
@@ -453,7 +453,7 @@ async def toggle_integration(int_id: str):
     target = next((i for i in MOCK_INTEGRATIONS if i["id"] == int_id), None)
     if not target:
         raise HTTPException(status_code=404, detail="Integration not found")
-    
+
     target["status"] = "paused" if target["status"] == "active" else "active"
     return {
         "status": "success",
@@ -486,7 +486,7 @@ async def terminate_session(session_id: str):
         raise HTTPException(status_code=404, detail="Session not found")
     if target.get("is_current"):
         raise HTTPException(status_code=400, detail="Cannot terminate current active commander session.")
-    
+
     MOCK_SESSIONS = [s for s in MOCK_SESSIONS if s["id"] != session_id]
     return {
         "status": "success",

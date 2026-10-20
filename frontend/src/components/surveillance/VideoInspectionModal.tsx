@@ -1,10 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useVideoStore } from '@/stores/videoStore';
-import { 
-  X, Camera, Play, Pause, Volume2, VolumeX, Shield, AlertTriangle, 
-  Car, Eye, Download, CheckCircle, Crosshair, MapPin, Gauge
-} from 'lucide-react';
+import { getAuthenticatedMediaUrl } from '@/api/client';
 import { Button } from '@/components/ui/Button';
+import { useVideoStore } from '@/stores/videoStore';
+import {
+  AlertTriangle,
+  Camera,
+  CheckCircle,Crosshair,
+  Eye,
+  Gauge,
+  Pause,
+  Play,
+  Shield,
+  Volume2,VolumeX,
+  X
+} from 'lucide-react';
+import React,{ useEffect,useRef,useState } from 'react';
 
 // Utility to generate a pseudo-SHA256 for browser demonstration
 async function computeSha256(str: string): Promise<string> {
@@ -49,7 +58,7 @@ export const VideoInspectionModal: React.FC = () => {
   const handleCaptureSnapshot = async () => {
     const video = videoRef.current;
     let dataUrl = '';
-    
+
     if (video) {
       try {
         const canvas = document.createElement('canvas');
@@ -93,7 +102,7 @@ export const VideoInspectionModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-200">
       <div className="bg-slate-950 border border-slate-700 rounded-2xl max-w-6xl w-full h-[90vh] flex flex-col overflow-hidden shadow-2xl">
-        
+
         {/* Header Bar */}
         <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/80 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -109,22 +118,22 @@ export const VideoInspectionModal: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={handleCaptureSnapshot}
               className="bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 font-semibold"
             >
               <Camera size={14} /> Capture Evidence Snapshot
             </Button>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="destructive"
               onClick={handleTriggerAlert}
               className="flex items-center gap-1.5 font-semibold"
             >
               <AlertTriangle size={14} /> Trigger Threat Alert
             </Button>
-            <button 
+            <button
               onClick={closeInspection}
               className="p-2 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
             >
@@ -135,18 +144,18 @@ export const VideoInspectionModal: React.FC = () => {
 
         {/* Main Content Area: Video + Telemetry Panel */}
         <div className="flex-1 flex overflow-hidden">
-          
+
           {/* Left / Center: Video Stream with Overlays */}
           <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden group">
             {config.sourceUrl && (
-              config?.sourceType === 'webcam' || 
-              config?.sourceUrl?.includes('/video_feed') || 
-              config?.sourceUrl?.includes('/stream') || 
-              config?.sourceUrl?.endsWith('.mjpg') || 
+              config?.sourceType === 'webcam' ||
+              config?.sourceUrl?.includes('/video_feed') ||
+              config?.sourceUrl?.includes('/stream') ||
+              config?.sourceUrl?.endsWith('.mjpg') ||
               config?.sourceUrl?.endsWith('.mjpeg')
             ) ? (
               <img
-                src={config.sourceUrl}
+                src={getAuthenticatedMediaUrl(config.sourceUrl)}
                 alt={inspectingCameraId}
                 className="w-full h-full object-contain select-none"
                 onError={(e) => {
@@ -156,7 +165,7 @@ export const VideoInspectionModal: React.FC = () => {
             ) : config.sourceUrl ? (
               <video
                 ref={videoRef}
-                src={config.sourceUrl}
+                src={getAuthenticatedMediaUrl(config.sourceUrl)}
                 autoPlay={config.isPlaying}
                 loop
                 muted={config.isMuted}
@@ -173,8 +182,8 @@ export const VideoInspectionModal: React.FC = () => {
             {/* Virtual Fence Polygon Overlay */}
             {config.showZoneOverlays && (
               <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-70">
-                <polygon 
-                  points="150,80 520,60 480,380 100,340" 
+                <polygon
+                  points="150,80 520,60 480,380 100,340"
                   className="fill-red-500/10 stroke-red-500 stroke-2 stroke-dasharray-4"
                 />
                 <text x="160" y="110" fill="#ef4444" fontSize="12" fontFamily="monospace" fontWeight="bold">
@@ -261,8 +270,8 @@ export const VideoInspectionModal: React.FC = () => {
                 <button
                   onClick={() => toggleAiOverlays(inspectingCameraId)}
                   className={`px-3 py-1.5 rounded-lg border font-semibold text-xs flex items-center gap-1.5 ${
-                    config.showAiOverlays 
-                      ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' 
+                    config.showAiOverlays
+                      ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
                       : 'bg-slate-800 border-slate-700 text-slate-400'
                   }`}
                 >
@@ -272,8 +281,8 @@ export const VideoInspectionModal: React.FC = () => {
                 <button
                   onClick={() => toggleZoneOverlays(inspectingCameraId)}
                   className={`px-3 py-1.5 rounded-lg border font-semibold text-xs flex items-center gap-1.5 ${
-                    config.showZoneOverlays 
-                      ? 'bg-red-500/20 border-red-500 text-red-300' 
+                    config.showZoneOverlays
+                      ? 'bg-red-500/20 border-red-500 text-red-300'
                       : 'bg-slate-800 border-slate-700 text-slate-400'
                   }`}
                 >
@@ -301,7 +310,7 @@ export const VideoInspectionModal: React.FC = () => {
 
           {/* Right Sidebar: Real-time Telemetry & AI Target Intelligence */}
           <div className="w-80 bg-slate-900 border-l border-slate-800 p-5 flex flex-col justify-between overflow-y-auto space-y-4 text-xs font-mono">
-            
+
             {/* Target Stream Status */}
             <div className="space-y-3">
               <h3 className="text-sm font-bold text-white flex items-center gap-2 font-sans border-b border-slate-800 pb-2">

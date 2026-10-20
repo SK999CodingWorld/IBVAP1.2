@@ -1,13 +1,30 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  Database, Shield, AlertTriangle, Car, CheckCircle2, 
-  Search, Filter, Eye, Download, MoreVertical, Play, 
-  Volume2, Maximize2, FileText, Check, Fingerprint,
-  Calendar, Clock, Camera, MapPin, ChevronDown, RefreshCw,
-  X, Hash, Award, CheckCircle, ExternalLink, Radio, ShieldCheck,
-  Share2, Copy, AlertOctagon, Terminal
-} from 'lucide-react';
+import { evidenceService } from '@/api';
 import { Button } from '@/components/ui/Button';
+import {
+  AlertTriangle,
+  Award,
+  Car,
+  Check,
+  CheckCircle,
+  Copy,
+  Database,
+  Download,
+  Eye,
+  FileText,
+  Filter,
+  Fingerprint,
+  Hash,
+  MapPin,
+  Maximize2,
+  MoreVertical,Play,
+  RefreshCw,
+  Search,
+  Shield,
+  ShieldCheck,
+  Volume2,
+  X
+} from 'lucide-react';
+import { useCallback,useEffect,useRef,useState } from 'react';
 
 interface EvidenceRecord {
   id: string;
@@ -46,8 +63,8 @@ const FALLBACK_RECORDS: EvidenceRecord[] = [
     severity: 'CRITICAL',
     camera: 'CAM-01 (BOP Main Gate)',
     status: 'Critical - Under Investigation',
-    thumb: '/thumb-ev-17616.jpg',
-    previewImg: '/evidence-main-preview.jpg',
+    thumb: '/camera-pedestrian.jpg',
+    previewImg: '/camera-vehicle.jpg',
     confidence: 96.8,
     speed_kmh: 42.5
   },
@@ -61,8 +78,8 @@ const FALLBACK_RECORDS: EvidenceRecord[] = [
     severity: 'HIGH',
     camera: 'CAM-01 (BOP Main Gate)',
     status: 'High Priority - Review Pending',
-    thumb: '/thumb-ev-17613.jpg',
-    previewImg: '/thumb-ev-17613.jpg',
+    thumb: '/camera-vehicle.jpg',
+    previewImg: '/camera-vehicle.jpg',
     confidence: 94.2,
     speed_kmh: 38.0
   },
@@ -76,8 +93,8 @@ const FALLBACK_RECORDS: EvidenceRecord[] = [
     severity: 'MEDIUM',
     camera: 'CAM-05 (Highway Lane 1)',
     status: 'Medium - Logged for Verification',
-    thumb: '/thumb-ev-17609.jpg',
-    previewImg: '/thumb-ev-17609.jpg',
+    thumb: '/bg-traffic.jpg',
+    previewImg: '/bg-traffic.jpg',
     confidence: 92.5,
     speed_kmh: 68.4
   },
@@ -91,8 +108,8 @@ const FALLBACK_RECORDS: EvidenceRecord[] = [
     severity: 'LOW',
     camera: 'CAM-03 (South Tower)',
     status: 'Low - Verified Friendly',
-    thumb: '/thumb-ev-17602.jpg',
-    previewImg: '/thumb-ev-17602.jpg',
+    thumb: '/camera-pedestrian.jpg',
+    previewImg: '/camera-pedestrian.jpg',
     confidence: 89.0,
     speed_kmh: null
   },
@@ -106,8 +123,8 @@ const FALLBACK_RECORDS: EvidenceRecord[] = [
     severity: 'HIGH',
     camera: 'CAM-04 (Perimeter East)',
     status: 'High - Resolved (Patrol Dispatched)',
-    thumb: '/thumb-ev-17598.jpg',
-    previewImg: '/thumb-ev-17598.jpg',
+    thumb: '/camera-vehicle.jpg',
+    previewImg: '/camera-vehicle.jpg',
     confidence: 93.1,
     speed_kmh: null
   }
@@ -121,7 +138,7 @@ export function EvidenceVault() {
   const [alertTypeFilter, setAlertTypeFilter] = useState('ALL');
   const [severityFilter, setSeverityFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState('Latest');
-  
+
   // Real-time backend stats
   const [stats, setStats] = useState<EvidenceStats>({
     total_cases: 76658,
@@ -137,8 +154,6 @@ export function EvidenceVault() {
   const [isCryptoModalOpen, setIsCryptoModalOpen] = useState(false);
   const [activeToast, setActiveToast] = useState<{ message: string; type: 'success' | 'info' | 'warn' } | null>(null);
   const [moreOptionsRecordId, setMoreOptionsRecordId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const showToast = (message: string, type: 'success' | 'info' | 'warn' = 'success') => {
@@ -171,7 +186,7 @@ export function EvidenceVault() {
       if (severityFilter !== 'ALL') params.append('severity', severityFilter);
       params.append('limit', '60');
 
-      const res = await fetch(`/api/evidence/search?${params.toString()}`);
+      const res = await evidenceService.search(params.toString());
       if (res.ok) {
         const json = await res.json();
         if (json.data && Array.isArray(json.data) && json.data.length > 0) {
@@ -185,8 +200,8 @@ export function EvidenceVault() {
             severity: (c.severity || 'CRITICAL').toUpperCase() as any,
             camera: `${c.camera_id} (${c.zone_name?.split(' ')[0] || 'BOP'})`,
             status: c.status === 'PENDING_REVIEW' ? 'Under Active Review' : c.status,
-            thumb: c.snapshot_url || '/thumb-ev-17616.jpg',
-            previewImg: c.snapshot_url || '/evidence-main-preview.jpg',
+            thumb: c.snapshot_url || '/camera-pedestrian.jpg',
+            previewImg: c.snapshot_url || '/camera-vehicle.jpg',
             confidence: Number(c.confidence) ? Number(Number(c.confidence).toFixed(1)) : 94.5,
             speed_kmh: c.speed_kmh
           }));
@@ -207,7 +222,7 @@ export function EvidenceVault() {
   // Fetch stats from backend
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch('/api/evidence/stats');
+      const res = await evidenceService.getStats();
       if (res.ok) {
         const json = await res.json();
         if (json.stats) {
@@ -261,7 +276,7 @@ export function EvidenceVault() {
   // Real backend resolve
   const handleResolve = async (caseId: string, id: string) => {
     try {
-      const res = await fetch(`/api/evidence/${id}/resolve`, { method: 'POST' });
+      const res = await evidenceService.resolveCase(id);
       if (res.ok) {
         showToast(`Case ${caseId} (${id}) marked as RESOLVED and signed to tamper ledger`, 'success');
       } else {
@@ -357,7 +372,7 @@ export function EvidenceVault() {
 
   return (
     <div className="flex flex-col h-full bg-[#070B12] text-slate-200 overflow-y-auto space-y-5 p-4 md:p-6 font-sans custom-scrollbar relative">
-      
+
       {/* Tactical Floating Toast Notification */}
       {activeToast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-[#0A0F18] border border-cyan-500/50 text-white shadow-2xl shadow-cyan-950/60 font-mono text-xs animate-in slide-in-from-bottom-5">
@@ -392,14 +407,14 @@ export function EvidenceVault() {
 
         <div className="flex items-center gap-2.5">
           {/* Live Sync Toggle */}
-          <button 
+          <button
             onClick={() => {
               setIsLiveSync(!isLiveSync);
               showToast(isLiveSync ? 'Live synchronization paused' : 'Live synchronization resumed (4.5s)', 'info');
             }}
             className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold flex items-center gap-2 transition-colors ${
-              isLiveSync 
-                ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' 
+              isLiveSync
+                ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400'
                 : 'bg-amber-500/10 border-amber-500/40 text-amber-400'
             }`}
           >
@@ -457,9 +472,9 @@ export function EvidenceVault() {
 
         {/* Card 2: Critical Threat Snapshots */}
         <div className="bg-[#0A0F18] border border-red-500/30 rounded-xl p-4 flex flex-col justify-between hover:border-red-500/60 transition-colors shadow-lg relative overflow-hidden">
-          <div 
+          <div
             className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none"
-            style={{ backgroundImage: `url('/ev-kpi-threat.jpg')` }}
+            style={{ backgroundImage: `url('/bg-operations.jpg')` }}
           />
           <div className="flex items-center justify-between relative z-10">
             <div className="p-2 rounded-lg bg-red-500/15 text-red-400 border border-red-500/30">
@@ -482,9 +497,9 @@ export function EvidenceVault() {
 
         {/* Card 3: Vehicular Speed Audits */}
         <div className="bg-[#0A0F18] border border-[#1B2536] rounded-xl p-4 flex flex-col justify-between hover:border-amber-500/40 transition-colors shadow-lg relative overflow-hidden">
-          <div 
+          <div
             className="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none"
-            style={{ backgroundImage: `url('/ev-kpi-speed.jpg')` }}
+            style={{ backgroundImage: `url('/bg-traffic.jpg')` }}
           />
           <div className="flex items-center justify-between relative z-10">
             <div className="p-2 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30">
@@ -505,7 +520,7 @@ export function EvidenceVault() {
         </div>
 
         {/* Card 4: 100% VERIFIED Cryptographic Status */}
-        <div 
+        <div
           onClick={() => setIsCryptoModalOpen(true)}
           className="bg-[#0A0F18] border border-cyan-500/30 rounded-xl p-4 flex flex-col justify-between hover:border-cyan-500/70 transition-colors shadow-lg relative overflow-hidden cursor-pointer group"
           title="Click to inspect Cryptographic Ledger Status"
@@ -586,7 +601,7 @@ export function EvidenceVault() {
 
       {/* Main Workspace Split: Evidence Records (Left ~60%) + Inspector (Right ~40%) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1">
-        
+
         {/* Left: Evidence Records List (Mirrors media_1790495679382.jpg left list) */}
         <div className="lg:col-span-7 bg-[#0A0F18] border border-[#1B2536] rounded-2xl p-4 shadow-xl flex flex-col justify-between">
           <div>
@@ -631,12 +646,12 @@ export function EvidenceVault() {
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       {/* Thumbnail with Track Badge */}
                       <div className="relative w-20 h-14 rounded-lg overflow-hidden border border-[#1E293B] bg-black flex-shrink-0">
-                        <img 
-                          src={rec.thumb} 
-                          alt={rec.caseId} 
+                        <img
+                          src={rec.thumb}
+                          alt={rec.caseId}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/evidence-main-preview.jpg';
+                            (e.target as HTMLImageElement).src = '/camera-vehicle.jpg';
                           }}
                         />
                         <div className="absolute top-1 left-1 px-1 py-0.2 bg-black/80 rounded text-[9px] font-mono text-cyan-300 font-bold border border-cyan-500/20">
@@ -670,9 +685,9 @@ export function EvidenceVault() {
 
                     {/* Action Icons */}
                     <div className="flex items-center gap-1.5 text-slate-400 font-mono relative">
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedRecord(rec);
                           setIsDossierOpen(true);
                         }}
@@ -681,9 +696,9 @@ export function EvidenceVault() {
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           handleDownloadSnapshot(rec);
                         }}
                         className="p-1.5 hover:text-cyan-400 hover:bg-slate-800 rounded transition-colors"
@@ -691,9 +706,9 @@ export function EvidenceVault() {
                       >
                         <Download className="w-3.5 h-3.5" />
                       </button>
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setMoreOptionsRecordId(isMoreOpen ? null : rec.id);
                         }}
                         className="p-1.5 hover:text-white hover:bg-slate-800 rounded transition-colors"
@@ -704,7 +719,7 @@ export function EvidenceVault() {
 
                       {/* Dropdown for More Options */}
                       {isMoreOpen && (
-                        <div 
+                        <div
                           className="absolute right-0 top-8 z-30 w-48 bg-[#0A0F18] border border-[#1B2536] rounded-xl p-1.5 shadow-2xl space-y-1 font-mono text-[11px]"
                           onClick={(e) => e.stopPropagation()}
                         >
@@ -777,12 +792,12 @@ export function EvidenceVault() {
 
             {/* Video / High-Res Snapshot Player */}
             <div className="relative rounded-xl overflow-hidden border border-[#1B2536] bg-black aspect-video flex items-center justify-center group shadow-xl">
-              <img 
-                src={selectedRecord.previewImg} 
-                alt="Evidence Snapshot" 
+              <img
+                src={selectedRecord.previewImg}
+                alt="Evidence Snapshot"
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/evidence-main-preview.jpg';
+                  (e.target as HTMLImageElement).src = '/camera-vehicle.jpg';
                 }}
               />
 
@@ -801,7 +816,7 @@ export function EvidenceVault() {
               {/* Bottom Playback HUD Bar */}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2.5 flex items-center justify-between text-xs font-mono text-slate-300">
                 <div className="flex items-center gap-3">
-                  <button 
+                  <button
                     onClick={() => showToast('Playing forensic video loop', 'info')}
                     className="p-1 hover:text-cyan-400 transition-colors"
                   >
@@ -817,8 +832,8 @@ export function EvidenceVault() {
 
                 <div className="flex items-center gap-2">
                   <Volume2 className="w-3.5 h-3.5 text-slate-400" />
-                  <Maximize2 
-                    className="w-3.5 h-3.5 text-slate-400 hover:text-cyan-300 cursor-pointer" 
+                  <Maximize2
+                    className="w-3.5 h-3.5 text-slate-400 hover:text-cyan-300 cursor-pointer"
                     onClick={() => setIsDossierOpen(true)}
                   />
                 </div>
@@ -877,7 +892,7 @@ export function EvidenceVault() {
 
           {/* Action Buttons */}
           <div className="pt-2 space-y-2 font-mono text-xs">
-            <Button 
+            <Button
               className="w-full bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold flex items-center justify-center gap-2 shadow-lg shadow-cyan-950/40"
               onClick={() => handleDownloadSnapshot(selectedRecord)}
             >
@@ -886,7 +901,7 @@ export function EvidenceVault() {
             </Button>
 
             <div className="grid grid-cols-2 gap-2">
-              <Button 
+              <Button
                 variant="outline"
                 className="bg-[#070B12] border-[#1E293B] hover:bg-slate-800 text-slate-200 font-semibold"
                 onClick={() => setIsDossierOpen(true)}
@@ -895,7 +910,7 @@ export function EvidenceVault() {
                 View Full Case
               </Button>
 
-              <Button 
+              <Button
                 variant="outline"
                 className="border-red-500/40 text-red-400 hover:bg-red-500/10 font-bold"
                 onClick={() => handleResolve(selectedRecord.caseId, selectedRecord.id)}
@@ -930,7 +945,7 @@ export function EvidenceVault() {
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsDossierOpen(false)}
                 className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
               >
@@ -943,11 +958,11 @@ export function EvidenceVault() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Snapshot preview */}
                 <div className="rounded-xl overflow-hidden border border-[#1B2536] bg-black aspect-video relative">
-                  <img 
-                    src={selectedRecord.previewImg} 
+                  <img
+                    src={selectedRecord.previewImg}
                     alt="Dossier crop"
                     className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = '/evidence-main-preview.jpg'; }}
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/camera-vehicle.jpg'; }}
                   />
                   <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/80 text-[10px] text-cyan-300 font-bold border border-cyan-500/30 rounded">
                     TRACK {selectedRecord.trackId}
@@ -1048,7 +1063,7 @@ export function EvidenceVault() {
                 <Fingerprint className="w-5 h-5" />
                 <h3 className="font-bold text-white text-sm">Cryptographic Vault & Ledger Audit</h3>
               </div>
-              <button 
+              <button
                 onClick={() => setIsCryptoModalOpen(false)}
                 className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
               >

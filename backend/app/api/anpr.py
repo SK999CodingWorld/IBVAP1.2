@@ -5,9 +5,9 @@ import time
 
 router = APIRouter(tags=["anpr"])
 
-@router.get("/api/anpr/reads")
+@router.get("/anpr/reads")
 async def list_anpr_reads(
-    plate: Optional[str] = None, 
+    plate: Optional[str] = None,
     camera: Optional[str] = None,
     type: Optional[str] = None,
     flagged_only: bool = False,
@@ -22,25 +22,25 @@ async def list_anpr_reads(
         logs = [l for l in logs if l.get("vehicle_type", "").upper() == type.upper()]
     return {"status": "success", "count": len(logs), "data": logs}
 
-@router.get("/api/anpr/search/{plate}")
+@router.get("/anpr/search/{plate}")
 async def search_plate(plate: str):
     """Searches vehicle plate history by exact or partial plate number"""
     logs = anpr_engine.get_logs(query=plate, limit=50)
     return {"status": "success", "query": plate, "matches": len(logs), "data": logs}
 
-@router.get("/api/anpr/stats")
+@router.get("/anpr/stats")
 async def anpr_stats():
     """Returns total ANPR vehicle reads, unique plates, vehicle distribution, and hotlist count"""
     stats = anpr_engine.get_stats()
     return {"status": "success", "stats": stats}
 
-@router.get("/api/anpr/hotlist")
+@router.get("/anpr/hotlist")
 async def get_hotlist():
     """Returns list of active vehicles on the BOLO / Hotlist watchlist"""
     items = anpr_engine.get_hotlist()
     return {"status": "success", "count": len(items), "data": items}
 
-@router.post("/api/anpr/hotlist")
+@router.post("/anpr/hotlist")
 async def add_to_hotlist(payload: Dict[str, Any] = Body(...)):
     """Flags a vehicle plate onto the BOLO hotlist"""
     plate = payload.get("plate_number") or payload.get("plate")
@@ -53,19 +53,19 @@ async def add_to_hotlist(payload: Dict[str, Any] = Body(...)):
     result = anpr_engine.add_to_hotlist(plate, reason, flag_level, model, reported_by)
     return {"status": "success", "message": f"Plate {plate} added to hotlist", "data": result}
 
-@router.delete("/api/anpr/hotlist/{plate}")
+@router.delete("/anpr/hotlist/{plate}")
 async def remove_from_hotlist(plate: str):
     """Removes a vehicle plate from the active hotlist"""
     removed = anpr_engine.remove_from_hotlist(plate)
     return {"status": "success", "removed": removed, "plate": plate}
 
-@router.get("/api/anpr/vahan/{plate}")
+@router.get("/anpr/vahan/{plate}")
 async def verify_vahan_registry(plate: str):
     """Queries Indian Ministry of Road Transport (MoRTH) VAHAN database for vehicle ownership & legal status"""
     record = anpr_engine.lookup_vahan_registry(plate)
     return record
 
-@router.post("/api/anpr/simulate-scan")
+@router.post("/anpr/simulate-scan")
 async def simulate_scan(payload: Dict[str, Any] = Body(default={})):
     """Triggers an on-demand OCR plate recognition scan at a border checkpoint"""
     import random
@@ -78,7 +78,7 @@ async def simulate_scan(payload: Dict[str, Any] = Body(default={})):
     v_type = payload.get("vehicle_type") or random.choice(["CAR", "TRUCK", "MOTORCYCLE", "BUS", "VAN"])
     camera = payload.get("camera") or random.choice(["CAM-05 (Highway Lane 1)", "CAM-06 (Freight Terminal)", "CHECK-01 (Border Post)"])
     zone = payload.get("zone") or "Sector 4 Red Perimeter"
-    
+
     # Store in database
     import sqlite3
     conf = round(random.uniform(0.92, 0.99), 2)

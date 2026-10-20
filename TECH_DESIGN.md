@@ -1,5 +1,7 @@
 # IBVAP — Technical Design Document
 
+> This describes product architecture. For current source ownership, runtime, and API conventions, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ## Problem Analysis
 
 **Core Challenge**: Transform existing IP CCTV infrastructure into an intelligent border surveillance platform using software-only AI/ML, eliminating need for specialized hardware.
@@ -250,7 +252,7 @@ ibvap/
 │   ├── weights/                 # .pt, .onnx, .engine (git-lfs)
 │   └── export/                  # Export scripts (torch → onnx → trt)
 │
-├── dashboard/                   # React + Vite + TS
+├── frontend/                    # Maintained React + Vite + TypeScript app
 │   ├── src/
 │   └── Dockerfile
 │

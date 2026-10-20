@@ -1,9 +1,19 @@
-import React, { useState } from 'react';
-import { 
-  Search, Filter, Users, Car, Crosshair, ArrowRight, ArrowUpRight, 
-  ArrowDownRight, ArrowDown, ArrowDownLeft, ArrowLeft, ArrowUpLeft, 
-  ArrowUp, Shield, Activity, Target
+import {
+  ArrowDown,ArrowDownLeft,
+  ArrowDownRight,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  ArrowUpLeft,
+  ArrowUpRight,
+  Car,Crosshair,
+  Filter,
+  Search,
+  Shield,
+  Target,
+  Users
 } from 'lucide-react';
+import React,{ useState } from 'react';
 
 interface DetectionItem {
   id: string;
@@ -56,12 +66,12 @@ export const PeopleObjects: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-[#070B12] text-slate-200 overflow-y-auto p-4 md:p-5 space-y-4 custom-scrollbar">
-      
+
       {/* ── TOP OPERATIONAL HEADER BAR WITH HELICOPTER & SCOPE ART ── */}
-      <div 
+      <div
         className="p-4 bg-[#0A0F18] border border-[#1B2536] rounded-xl flex flex-wrap gap-4 justify-between items-center relative overflow-hidden shadow-xl"
         style={{
-          backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.98) 45%, rgba(10, 15, 24, 0.45) 80%, rgba(10, 15, 24, 0.2) 100%), url('/track-header-bg.jpg')`,
+          backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.98) 45%, rgba(10, 15, 24, 0.45) 80%, rgba(10, 15, 24, 0.2) 100%), url('/bg-surveillance.jpg')`,
           backgroundPosition: 'right center',
           backgroundRepeat: 'no-repeat',
           backgroundSize: 'contain'
@@ -91,12 +101,12 @@ export const PeopleObjects: React.FC = () => {
 
       {/* ── 4 KPI STATS CARDS MATCHING SCREENSHOT ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        
+
         {/* Total People */}
-        <div 
+        <div
           className="relative bg-[#0A0F18] border border-cyan-500/30 hover:border-cyan-500/60 rounded-xl p-3.5 shadow-xl overflow-hidden group transition-all"
           style={{
-            backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.92) 50%, rgba(10, 15, 24, 0.3) 100%), url('/track-kpi-people.jpg')`,
+            backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.92) 50%, rgba(10, 15, 24, 0.3) 100%), url('/bg-operations.jpg')`,
             backgroundPosition: 'center',
             backgroundSize: 'cover'
           }}
@@ -116,10 +126,10 @@ export const PeopleObjects: React.FC = () => {
         </div>
 
         {/* Total Vehicles */}
-        <div 
+        <div
           className="relative bg-[#0A0F18] border border-emerald-500/30 hover:border-emerald-500/60 rounded-xl p-3.5 shadow-xl overflow-hidden group transition-all"
           style={{
-            backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.92) 50%, rgba(10, 15, 24, 0.3) 100%), url('/track-kpi-vehicles.jpg')`,
+            backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.92) 50%, rgba(10, 15, 24, 0.3) 100%), url('/bg-traffic.jpg')`,
             backgroundPosition: 'center',
             backgroundSize: 'cover'
           }}
@@ -139,10 +149,10 @@ export const PeopleObjects: React.FC = () => {
         </div>
 
         {/* Active Tracks */}
-        <div 
+        <div
           className="relative bg-[#0A0F18] border border-amber-500/30 hover:border-amber-500/60 rounded-xl p-3.5 shadow-xl overflow-hidden group transition-all"
           style={{
-            backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.92) 50%, rgba(10, 15, 24, 0.3) 100%), url('/track-kpi-active.jpg')`,
+            backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.92) 50%, rgba(10, 15, 24, 0.3) 100%), url('/bg-surveillance.jpg')`,
             backgroundPosition: 'center',
             backgroundSize: 'cover'
           }}
@@ -162,10 +172,10 @@ export const PeopleObjects: React.FC = () => {
         </div>
 
         {/* Avg Confidence */}
-        <div 
+        <div
           className="relative bg-[#0A0F18] border border-purple-500/30 hover:border-purple-500/60 rounded-xl p-3.5 shadow-xl overflow-hidden group transition-all"
           style={{
-            backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.92) 50%, rgba(10, 15, 24, 0.3) 100%), url('/track-kpi-confidence.jpg')`,
+            backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.92) 50%, rgba(10, 15, 24, 0.3) 100%), url('/bg-analytics.jpg')`,
             backgroundPosition: 'center',
             backgroundSize: 'cover'
           }}
@@ -188,7 +198,7 @@ export const PeopleObjects: React.FC = () => {
 
       {/* ── DETECTION FEED CARD & TABLE ── */}
       <div className="bg-[#0A0F18] border border-[#1B2536] rounded-xl overflow-hidden shadow-xl">
-        
+
         {/* Table Toolbar */}
         <div className="p-3.5 border-b border-[#1B2536] flex flex-wrap gap-3 justify-between items-center bg-[#070B12]/80">
           <div className="flex items-center gap-2">
@@ -202,9 +212,9 @@ export const PeopleObjects: React.FC = () => {
             {/* Search Input */}
             <div className="relative w-60 sm:w-72">
               <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search ID or Camera..." 
+              <input
+                type="text"
+                placeholder="Search ID or Camera..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-[#0A0F18] border border-[#1E293B] rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:border-cyan-500 text-slate-200"
@@ -214,7 +224,7 @@ export const PeopleObjects: React.FC = () => {
             {/* Filter Dropdown */}
             <div className="flex items-center space-x-1.5 bg-[#0A0F18] rounded-lg px-2.5 py-1.5 border border-[#1E293B] text-xs">
               <Filter className="w-3.5 h-3.5 text-slate-400" />
-              <select 
+              <select
                 className="bg-transparent text-slate-200 focus:outline-none cursor-pointer"
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
@@ -245,7 +255,7 @@ export const PeopleObjects: React.FC = () => {
             <tbody className="divide-y divide-[#1B2536]">
               {filtered.map((item, idx) => (
                 <tr key={idx} className="hover:bg-[#0E1624]/60 transition-colors group">
-                  
+
                   {/* Tracking ID */}
                   <td className="px-5 py-3">
                     <span className="font-bold text-white group-hover:text-cyan-400 transition-colors">
@@ -298,7 +308,7 @@ export const PeopleObjects: React.FC = () => {
                   <td className="px-4 py-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-20 bg-[#070B12] rounded-full h-1.5 overflow-hidden border border-[#1E293B]">
-                        <div 
+                        <div
                           className={`h-full rounded-full ${
                             item.confidence >= 90 ? 'bg-emerald-500' :
                             item.confidence >= 80 ? 'bg-cyan-500' :

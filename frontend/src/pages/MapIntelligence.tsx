@@ -1,13 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Layers, AlertTriangle, ShieldAlert, Activity, CheckCircle2, 
-  Navigation, Crosshair, Compass, Video, Eye, Radio, Maximize2, 
-  Minimize2, Shield, ArrowUpRight, Zap, Target, Sliders,
-  Satellite, Mountain, Moon, Wifi, Search, ChevronRight,
-  ChevronLeft, Car, Users, X
-} from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import {
+  AlertTriangle,
+  Car,
+  ChevronRight,
+  Crosshair,
+  Layers,
+  Maximize2,
+  Minimize2,
+  Moon,
+  Mountain,
+  Navigation,
+  Satellite,
+  Search,
+  ShieldAlert,
+  Target,
+  Users,
+  Wifi
+} from 'lucide-react';
+import { useEffect,useRef,useState } from 'react';
 
 interface IncidentItem {
   id: string;
@@ -64,21 +75,21 @@ const ACTIVE_INCIDENTS: IncidentItem[] = [
 ];
 
 const CAMERAS_LIST: CameraMarkerItem[] = [
-  { id: 'CAM-01', name: 'North Fence Alpha', lat: 27.055, lon: 88.455, status: 'ONLINE', feed: '/feed-bop01.jpg', fps: 30 },
-  { id: 'CAM-02', name: 'BOP Wagah Sector', lat: 31.604, lon: 74.572, status: 'ONLINE', feed: '/feed-bop02.jpg', fps: 28 },
-  { id: 'CAM-03', name: 'BOP Jaisalmer Desert', lat: 26.912, lon: 70.902, status: 'ONLINE', feed: '/feed-bop03.jpg', fps: 25 },
-  { id: 'CAM-04', name: 'Perimeter East Gate', lat: 26.712, lon: 92.134, status: 'ONLINE', feed: '/feed-road01.jpg', fps: 30 },
-  { id: 'CAM-05', name: 'Checkpoint Bravo', lat: 25.884, lon: 93.227, status: 'ONLINE', feed: '/feed-check01.jpg', fps: 30 },
-  { id: 'CAM-06', name: 'Valley Pass Sentry', lat: 32.500, lon: 74.800, status: 'ONLINE', feed: '/feed-watch01.jpg', fps: 24 },
-  { id: 'CAM-07', name: 'Hill Track Overwatch', lat: 34.152, lon: 77.577, status: 'OFFLINE', feed: '/feed-bop03.jpg', fps: 0 },
-  { id: 'CAM-08', name: 'Bridge Outpost 08', lat: 27.580, lon: 91.850, status: 'ONLINE', feed: '/fence-feed-alpha.jpg', fps: 30 },
+  { id: 'CAM-01', name: 'North Fence Alpha', lat: 27.055, lon: 88.455, status: 'ONLINE', feed: '/camera-perimeter.jpg', fps: 30 },
+  { id: 'CAM-02', name: 'BOP Wagah Sector', lat: 31.604, lon: 74.572, status: 'ONLINE', feed: '/camera-checkpoint.jpg', fps: 28 },
+  { id: 'CAM-03', name: 'BOP Jaisalmer Desert', lat: 26.912, lon: 70.902, status: 'ONLINE', feed: '/camera-pedestrian.jpg', fps: 25 },
+  { id: 'CAM-04', name: 'Perimeter East Gate', lat: 26.712, lon: 92.134, status: 'ONLINE', feed: '/bg-traffic.jpg', fps: 30 },
+  { id: 'CAM-05', name: 'Checkpoint Bravo', lat: 25.884, lon: 93.227, status: 'ONLINE', feed: '/camera-checkpoint.jpg', fps: 30 },
+  { id: 'CAM-06', name: 'Valley Pass Sentry', lat: 32.500, lon: 74.800, status: 'ONLINE', feed: '/bg-operations.jpg', fps: 24 },
+  { id: 'CAM-07', name: 'Hill Track Overwatch', lat: 34.152, lon: 77.577, status: 'OFFLINE', feed: '/camera-pedestrian.jpg', fps: 0 },
+  { id: 'CAM-08', name: 'Bridge Outpost 08', lat: 27.580, lon: 91.850, status: 'ONLINE', feed: '/camera-perimeter.jpg', fps: 30 },
 ];
 
 const CAMERAS_BOTTOM = [
-  { id: 'CAM-01', name: 'North Fence Alpha', feed: '/feed-bop01.jpg', lat: 27.055, lon: 88.455 },
-  { id: 'CAM-04', name: 'Perimeter East', feed: '/feed-road01.jpg', lat: 26.712, lon: 92.134 },
-  { id: 'CAM-05', name: 'Checkpoint', feed: '/feed-check01.jpg', lat: 25.884, lon: 93.227 },
-  { id: 'CAM-07', name: 'Hill Track', feed: '/feed-bop03.jpg', lat: 34.152, lon: 77.577 }
+  { id: 'CAM-01', name: 'North Fence Alpha', feed: '/camera-perimeter.jpg', lat: 27.055, lon: 88.455 },
+  { id: 'CAM-04', name: 'Perimeter East', feed: '/bg-traffic.jpg', lat: 26.712, lon: 92.134 },
+  { id: 'CAM-05', name: 'Checkpoint', feed: '/camera-checkpoint.jpg', lat: 25.884, lon: 93.227 },
+  { id: 'CAM-07', name: 'Hill Track', feed: '/camera-pedestrian.jpg', lat: 34.152, lon: 77.577 }
 ];
 
 const TILE_PROVIDERS: Record<string, { url: string; attribution: string; maxZoom: number }> = {
@@ -149,11 +160,11 @@ export function MapIntelligence() {
         [32.5, 74.5], [31.8, 74.8], [30.9, 74.6], [29.5, 73.8], [28.2, 72.5], [27.0, 71.2],
         [26.2, 70.5], [25.3, 69.8], [24.5, 68.9], [23.8, 68.5]
       ];
-      L.polyline(ibPakistan, { 
-        color: '#ff6b1a', 
-        weight: 3, 
-        opacity: 0.9, 
-        dashArray: '8,6' 
+      L.polyline(ibPakistan, {
+        color: '#ff6b1a',
+        weight: 3,
+        opacity: 0.9,
+        dashArray: '8,6'
       }).addTo(map).bindPopup(`
         <div style="padding: 6px; font-family: monospace; color: #ff6b1a; font-weight: bold; background: #0A0F18;">
           INTERNATIONAL BORDER (PAKISTAN) // BSF JURISDICTION
@@ -164,11 +175,11 @@ export function MapIntelligence() {
       const lacChina: [number, number][] = [
         [34.5, 76.5], [33.8, 78.2], [32.9, 79.5], [31.5, 80.8], [30.2, 82.5], [28.8, 85.5], [27.5, 88.5]
       ];
-      L.polyline(lacChina, { 
-        color: '#ef4444', 
-        weight: 3, 
-        opacity: 0.9, 
-        dashArray: '10,6' 
+      L.polyline(lacChina, {
+        color: '#ef4444',
+        weight: 3,
+        opacity: 0.9,
+        dashArray: '10,6'
       }).addTo(map).bindPopup(`
         <div style="padding: 6px; font-family: monospace; color: #ef4444; font-weight: bold; background: #0A0F18;">
           LINE OF ACTUAL CONTROL (LAC) // ITBP SECTOR OVERWATCH
@@ -285,7 +296,7 @@ export function MapIntelligence() {
               <span style="font-size: 10px; color: ${color}; font-weight: 700;">● ${cam.status}</span>
             </div>
             <div style="width: 100%; height: 95px; border-radius: 6px; overflow: hidden; margin-bottom: 8px; border: 1px solid #1E293B; background: #000;">
-              <img src="${cam.feed}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/feed-bop01.jpg'" />
+              <img src="${cam.feed}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/camera-perimeter.jpg'" />
             </div>
             <div style="font-size: 11px; font-weight: 700; color: #F1F5F9; margin-bottom: 2px;">${cam.name}</div>
             <div style="font-size: 10px; color: #94A3B8; margin-bottom: 6px;">GPS: ${cam.lat.toFixed(3)}°N, ${cam.lon.toFixed(3)}°E</div>
@@ -334,7 +345,7 @@ export function MapIntelligence() {
             </div>
             <div style="display: flex; gap: 8px; margin-bottom: 8px;">
               <div style="width: 70px; height: 60px; border-radius: 6px; overflow: hidden; border: 1px solid #1E293B; flex-shrink: 0; background: #000;">
-                <img src="/map-popup-incident.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/feed-bop01.jpg'" />
+                <img src="/camera-pedestrian.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/camera-perimeter.jpg'" />
               </div>
               <div style="flex: 1; min-width: 0;">
                 <div style="font-size: 11px; font-weight: 700; color: #FFFFFF; line-height: 1.2;">${inc.type}</div>
@@ -459,7 +470,7 @@ export function MapIntelligence() {
     }
   };
 
-  const filteredIncidents = ACTIVE_INCIDENTS.filter(inc => 
+  const filteredIncidents = ACTIVE_INCIDENTS.filter(inc =>
     inc.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
     inc.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     inc.location.toLowerCase().includes(searchTerm.toLowerCase())
@@ -467,17 +478,17 @@ export function MapIntelligence() {
 
   return (
     <div className={`flex flex-col h-full bg-[#070B12] text-slate-200 overflow-y-auto space-y-4 p-4 font-sans ${isFullscreen ? 'fixed inset-0 z-50 p-4' : ''}`}>
-      
+
       {/* Top Map Control Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-[#0A0F18] border border-[#1B2536] p-2.5 rounded-xl shadow-lg font-mono text-xs">
-        
+
         {/* Layer Mode Selectors */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <button 
+          <button
             onClick={() => setMapMode('satellite')}
             className={`px-3 py-1.5 rounded-lg border flex items-center gap-1.5 font-bold transition-all cursor-pointer ${
-              mapMode === 'satellite' 
-                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-md shadow-cyan-950/40' 
+              mapMode === 'satellite'
+                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-md shadow-cyan-950/40'
                 : 'bg-[#070B12] text-slate-400 border-[#1B2536] hover:text-white'
             }`}
           >
@@ -485,11 +496,11 @@ export function MapIntelligence() {
             Satellite
           </button>
 
-          <button 
+          <button
             onClick={() => setMapMode('terrain')}
             className={`px-3 py-1.5 rounded-lg border flex items-center gap-1.5 font-bold transition-all cursor-pointer ${
-              mapMode === 'terrain' 
-                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-md shadow-cyan-950/40' 
+              mapMode === 'terrain'
+                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-md shadow-cyan-950/40'
                 : 'bg-[#070B12] text-slate-400 border-[#1B2536] hover:text-white'
             }`}
           >
@@ -497,11 +508,11 @@ export function MapIntelligence() {
             Terrain
           </button>
 
-          <button 
+          <button
             onClick={() => setMapMode('dark')}
             className={`px-3 py-1.5 rounded-lg border flex items-center gap-1.5 font-bold transition-all cursor-pointer ${
-              mapMode === 'dark' 
-                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-md shadow-cyan-950/40' 
+              mapMode === 'dark'
+                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-md shadow-cyan-950/40'
                 : 'bg-[#070B12] text-slate-400 border-[#1B2536] hover:text-white'
             }`}
           >
@@ -509,11 +520,11 @@ export function MapIntelligence() {
             Dark Tactical
           </button>
 
-          <button 
+          <button
             onClick={() => setMapMode('traffic')}
             className={`px-3 py-1.5 rounded-lg border flex items-center gap-1.5 font-bold transition-all cursor-pointer ${
-              mapMode === 'traffic' 
-                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-md shadow-cyan-950/40' 
+              mapMode === 'traffic'
+                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-md shadow-cyan-950/40'
                 : 'bg-[#070B12] text-slate-400 border-[#1B2536] hover:text-white'
             }`}
           >
@@ -531,16 +542,16 @@ export function MapIntelligence() {
         <div className="flex items-center gap-2 flex-1 max-w-md justify-end">
           <div className="relative w-full max-w-[280px]">
             <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
-            <input 
-              type="text" 
-              placeholder="Search incident, sector, camera..." 
+            <input
+              type="text"
+              placeholder="Search incident, sector, camera..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-[#070B12] border border-[#1B2536] rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500 font-mono"
             />
           </div>
 
-          <button 
+          <button
             onClick={() => setIsFullscreen(!isFullscreen)}
             className="p-1.5 bg-[#070B12] border border-[#1B2536] hover:bg-slate-800 rounded-lg text-slate-300 transition-all cursor-pointer"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Tactical View'}
@@ -552,41 +563,44 @@ export function MapIntelligence() {
 
       {/* Main Grid: Interactive Live Leaflet Map (Left ~75%) + Intelligence & Incidents (Right ~25%) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
-        
+
         {/* Left Map View */}
         <div className="lg:col-span-9 relative bg-[#070B12] border border-[#1B2536] rounded-2xl overflow-hidden shadow-2xl min-h-[480px] flex flex-col">
-          
+
           {/* Live Leaflet Map Container */}
-          <div 
-            ref={mapRef} 
-            className="w-full h-full min-h-[480px] flex-1 z-0" 
-            style={{ minHeight: isFullscreen ? 'calc(100vh - 120px)' : '480px' }}
+          <div
+            ref={mapRef}
+            className="w-full h-full min-h-[480px] flex-1 z-0"
+            style={{
+              minHeight: isFullscreen ? 'calc(100vh - 120px)' : '480px',
+              backgroundColor: '#070B12'
+            }}
           />
 
           {/* Left Vertical Map Floating Controls */}
           <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-20 font-mono">
-            <button 
+            <button
               onClick={handleZoomIn}
               className="w-8 h-8 bg-[#0A0F18]/90 hover:bg-[#0E1624] border border-[#1B2536] rounded-lg flex items-center justify-center text-white text-base font-bold shadow-lg cursor-pointer transition-colors"
               title="Zoom In"
             >
               +
             </button>
-            <button 
+            <button
               onClick={handleZoomOut}
               className="w-8 h-8 bg-[#0A0F18]/90 hover:bg-[#0E1624] border border-[#1B2536] rounded-lg flex items-center justify-center text-white text-base font-bold shadow-lg cursor-pointer transition-colors"
               title="Zoom Out"
             >
               −
             </button>
-            <button 
+            <button
               onClick={handleRecenter}
               className="w-8 h-8 bg-[#0A0F18]/90 hover:bg-[#0E1624] border border-[#1B2536] rounded-lg flex items-center justify-center text-cyan-400 shadow-lg mt-1 cursor-pointer transition-colors"
               title="Recenter Sector 4 (27.055°N, 88.455°E)"
             >
               <Crosshair className="w-4 h-4" />
             </button>
-            <button 
+            <button
               onClick={() => {
                 const modes: ('satellite' | 'terrain' | 'dark' | 'traffic')[] = ['satellite', 'dark', 'terrain', 'traffic'];
                 const nextMode = modes[(modes.indexOf(mapMode) + 1) % modes.length];
@@ -615,7 +629,7 @@ export function MapIntelligence() {
 
         {/* Right Intelligence & Incident Panels */}
         <div className="lg:col-span-3 space-y-4 flex flex-col justify-between">
-          
+
           {/* Top: Map Intelligence & Legend Box */}
           <div className="bg-[#0A0F18] border border-[#1B2536] rounded-xl p-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-[#1B2536] pb-2.5 mb-3">
@@ -625,7 +639,7 @@ export function MapIntelligence() {
                   Map Intelligence
                 </h2>
               </div>
-              <button 
+              <button
                 onClick={handleRecenter}
                 className="flex items-center gap-1 text-[11px] font-mono text-cyan-400 hover:text-cyan-300 cursor-pointer"
               >
@@ -637,7 +651,7 @@ export function MapIntelligence() {
             {/* Tactical Legend List */}
             <div className="space-y-2 text-xs font-mono">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Legend & Signals</span>
-              
+
               <div className="flex items-center gap-2.5 text-slate-300">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50 animate-pulse" />
                 <span className="text-[11px]">Active Camera (7 Online)</span>
@@ -690,12 +704,12 @@ export function MapIntelligence() {
                 {filteredIncidents.map((inc) => {
                   const isSelected = selectedIncident?.id === inc.id;
                   return (
-                    <div 
+                    <div
                       key={inc.id}
                       onClick={() => handleSelectIncident(inc)}
                       className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
-                        isSelected 
-                          ? 'bg-red-950/30 border-red-500/70 shadow-lg shadow-red-950/40 ring-1 ring-red-500/30' 
+                        isSelected
+                          ? 'bg-red-950/30 border-red-500/70 shadow-lg shadow-red-950/40 ring-1 ring-red-500/30'
                           : 'bg-[#070B12] border-[#1B2536] hover:border-slate-700'
                       }`}
                     >
@@ -736,7 +750,7 @@ export function MapIntelligence() {
 
       {/* Bottom Row: Live Feeds (Left ~55%) + Movement Tracks (Middle ~20%) + Status Summary (Right ~25%) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        
+
         {/* Left: Live Camera Feeds (Sector 04) */}
         <div className="lg:col-span-7 bg-[#0A0F18] border border-[#1B2536] rounded-xl p-4 shadow-xl font-mono">
           <div className="flex items-center justify-between border-b border-[#1B2536] pb-2.5 mb-3 text-xs">
@@ -746,7 +760,7 @@ export function MapIntelligence() {
                 Live Camera Feeds (Click to Focus on Map)
               </h3>
             </div>
-            <button 
+            <button
               onClick={handleRecenter}
               className="text-cyan-400 hover:text-cyan-300 font-bold cursor-pointer"
             >
@@ -758,17 +772,17 @@ export function MapIntelligence() {
           <div className="relative">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
               {CAMERAS_BOTTOM.map((cam) => (
-                <div 
-                  key={cam.id} 
+                <div
+                  key={cam.id}
                   onClick={() => handleSelectCamera(cam.id, cam.lat, cam.lon)}
                   className="relative rounded-lg overflow-hidden border border-[#1E293B] bg-black group cursor-pointer hover:border-cyan-500/70 transition-all hover:scale-[1.02]"
                 >
                   <div className="aspect-[4/3] w-full">
-                    <img 
-                      src={cam.feed} 
+                    <img
+                      src={cam.feed}
                       alt={cam.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => { (e.target as HTMLImageElement).src = '/feed-bop01.jpg'; }}
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/camera-perimeter.jpg'; }}
                     />
                   </div>
 
@@ -805,12 +819,19 @@ export function MapIntelligence() {
           </div>
 
           <div className="relative rounded-lg overflow-hidden border border-[#1E293B] aspect-video bg-slate-950 flex-1 flex items-center justify-center">
-            <img 
-              src="/map-movement-tracks.jpg" 
+            <img
+              src="/clean-map-terrain.jpg"
               alt="Movement Tracks"
-              className="w-full h-full object-cover"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/fences-intrusion-map.jpg'; }}
+              className="absolute inset-0 w-full h-full object-cover"
             />
+            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 640 360" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M44 274 C126 238 135 168 235 190 S374 276 470 176 S564 140 610 72" fill="none" stroke="#22D3EE" strokeWidth="4" strokeLinecap="round" strokeDasharray="9 8" />
+              <path d="M65 78 C158 116 190 240 304 220 S426 120 572 252" fill="none" stroke="#F59E0B" strokeWidth="3" strokeLinecap="round" strokeDasharray="7 8" />
+              <circle cx="44" cy="274" r="7" fill="#22D3EE" stroke="#E2E8F0" strokeWidth="3" />
+              <circle cx="610" cy="72" r="7" fill="#22D3EE" stroke="#E2E8F0" strokeWidth="3" />
+              <circle cx="65" cy="78" r="6" fill="#F59E0B" stroke="#E2E8F0" strokeWidth="2" />
+              <circle cx="572" cy="252" r="6" fill="#F59E0B" stroke="#E2E8F0" strokeWidth="2" />
+            </svg>
           </div>
         </div>
 

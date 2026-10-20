@@ -6,8 +6,6 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from collections import defaultdict, deque
 
-from ultralytics import YOLO
-
 from shared.config.settings import settings
 from shared.messaging.streams import StreamManager
 from shared.schemas.tracking import TrackBatch, Track
@@ -20,7 +18,7 @@ class BehaviorWorker:
     def __init__(self, stream_manager: StreamManager, worker_id: str = "behavior-1"):
         self.stream_manager = stream_manager
         self.worker_id = worker_id
-        self.pose_model: Optional[YOLO] = None
+        self.pose_model: Optional[Any] = None
         self.track_history: Dict[int, deque] = defaultdict(lambda: deque(maxlen=30))
         self._running = False
         self._tasks: List[asyncio.Task] = []
@@ -53,6 +51,8 @@ class BehaviorWorker:
 
     async def _load_models(self):
         try:
+            from ultralytics import YOLO
+
             self.pose_model = YOLO("yolov8n-pose.pt")
             self.pose_model.to(settings.detection_device)
             logger.info("Loaded YOLOv8 pose model")

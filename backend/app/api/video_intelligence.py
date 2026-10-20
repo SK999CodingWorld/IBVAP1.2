@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from app.ai.video_intelligence import intelligence_engine
 from app.core.security import get_current_active_user
 
-router = APIRouter(prefix="/api/video-intelligence", tags=["video-intelligence"])
+router = APIRouter(prefix="/video-intelligence", tags=["video-intelligence"])
 
 class AnalyzeVideoResponse(BaseModel):
     video_id: str

@@ -1,9 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Network, Plus, RefreshCw, Check, Trash2, Globe, Shield, Activity, 
-  ExternalLink, Zap, Lock, Radio, Server, CheckCircle2, AlertTriangle, 
-  Copy, Play, Pause, ChevronRight, X, ArrowUpRight, Terminal, Wifi
+import { securityService } from '@/api';
+import {
+  Activity,
+  AlertTriangle,
+  Check,
+  CheckCircle2,
+  Copy,
+  Lock,
+  Network,
+  Pause,
+  Play,
+  Plus,RefreshCw,
+  Terminal,
+  Trash2,
+  Wifi,
+  X,
+  Zap
 } from 'lucide-react';
+import React,{ useEffect,useState } from 'react';
 
 export interface IntegrationItem {
   id: string;
@@ -134,7 +147,7 @@ export const IntegrationsSection: React.FC = () => {
   const fetchIntegrations = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/security/integrations');
+      const res = await securityService.getIntegrations();
       if (res.ok) {
         const data = await res.json();
         if (data.integrations && data.integrations.length > 0) {
@@ -160,7 +173,7 @@ export const IntegrationsSection: React.FC = () => {
 
   const handleToggle = async (id: string) => {
     try {
-      const res = await fetch(`/api/security/integrations/${id}/toggle`, { method: 'PUT' });
+      const res = await securityService.toggleIntegration(id);
       if (res.ok) {
         const data = await res.json();
         setIntegrations(prev => prev.map(i => i.id === id ? { ...i, status: data.new_status } : i));
@@ -176,7 +189,7 @@ export const IntegrationsSection: React.FC = () => {
     setTestingId(id);
     setTestResult(null);
     try {
-      const res = await fetch(`/api/security/integrations/${id}/test`, { method: 'POST' });
+      const res = await securityService.testIntegration(id);
       const data = await res.json();
       setTestResult(data);
       if (data.ping_ms) {
@@ -196,7 +209,7 @@ export const IntegrationsSection: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to remove this external integration?')) return;
     try {
-      await fetch(`/api/security/integrations/${id}`, { method: 'DELETE' });
+      await securityService.deleteIntegration(id);
     } catch (e) {
       console.warn(e);
     }
@@ -208,17 +221,13 @@ export const IntegrationsSection: React.FC = () => {
     if (!newName.trim() || !newEndpoint.trim()) return;
 
     try {
-      const res = await fetch('/api/security/integrations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newName.trim(),
-          category: newCategory,
-          protocol: newProtocol,
-          endpoint_url: newEndpoint.trim(),
-          auth_type: newAuthType,
-          events: selectedEvents
-        })
+      const res = await securityService.createIntegration({
+        name: newName.trim(),
+        category: newCategory,
+        protocol: newProtocol,
+        endpoint_url: newEndpoint.trim(),
+        auth_type: newAuthType,
+        events: selectedEvents
       });
 
       if (res.ok) {
@@ -254,15 +263,15 @@ export const IntegrationsSection: React.FC = () => {
   };
 
   const allEventsList = [
-    'CRITICAL_ALERTS', 'ANPR_HOTLIST_MATCH', 'FENCE_BREACH', 
-    'DRONE_GPS_TELEMETRY', 'GIMBAL_TARGETING', 'ANPR_PLATE_READ', 
-    'STOLEN_VEHICLE_CHECK', 'SIREN_TRIGGER', 'QRT_DISPATCH_DIRECTIVE', 
+    'CRITICAL_ALERTS', 'ANPR_HOTLIST_MATCH', 'FENCE_BREACH',
+    'DRONE_GPS_TELEMETRY', 'GIMBAL_TARGETING', 'ANPR_PLATE_READ',
+    'STOLEN_VEHICLE_CHECK', 'SIREN_TRIGGER', 'QRT_DISPATCH_DIRECTIVE',
     'AUDIT_LOGS', 'SYSTEM_TAMPERING'
   ];
 
   return (
     <div className="space-y-6">
-      
+
       {/* 4 KPI Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="bg-[#0B111B] border border-slate-800/90 rounded-xl p-4 flex items-center justify-between shadow-sm hover:border-cyan-500/30 transition-all">
@@ -373,8 +382,8 @@ export const IntegrationsSection: React.FC = () => {
         {/* Live Test Feedback Banner */}
         {testResult && (
           <div className={`p-4 rounded-xl border flex items-start justify-between gap-3 text-xs font-mono animate-in fade-in-50 ${
-            testResult.status === 'success' 
-              ? 'bg-[#061B16] border-emerald-500/50 text-emerald-300' 
+            testResult.status === 'success'
+              ? 'bg-[#061B16] border-emerald-500/50 text-emerald-300'
               : 'bg-[#1E0B0B] border-red-500/50 text-red-300'
           }`}>
             <div className="space-y-1">
@@ -406,11 +415,11 @@ export const IntegrationsSection: React.FC = () => {
             const isTesting = testingId === item.id;
 
             return (
-              <div 
+              <div
                 key={item.id}
                 className={`p-4 rounded-xl border transition-all space-y-3 relative group bg-[#070D18] ${
-                  isActive 
-                    ? 'border-slate-800/90 hover:border-cyan-500/40 shadow-sm' 
+                  isActive
+                    ? 'border-slate-800/90 hover:border-cyan-500/40 shadow-sm'
                     : 'border-slate-800/40 opacity-70 hover:opacity-90'
                 }`}
               >
@@ -422,8 +431,8 @@ export const IntegrationsSection: React.FC = () => {
                         {item.name}
                       </h3>
                       <span className={`text-[9px] font-mono px-2 py-0.5 rounded font-bold uppercase ${
-                        isActive 
-                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/40' 
+                        isActive
+                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/40'
                           : 'bg-amber-950/80 text-amber-400 border border-amber-500/40'
                       }`}>
                         {item.status}
@@ -503,8 +512,8 @@ export const IntegrationsSection: React.FC = () => {
                       onClick={() => handleToggle(item.id)}
                       title={isActive ? 'Pause Integration' : 'Activate Integration'}
                       className={`p-1.5 rounded border transition-colors cursor-pointer ${
-                        isActive 
-                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20' 
+                        isActive
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20'
                           : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
                       }`}
                     >
@@ -666,27 +675,25 @@ export const IntegrationsSection: React.FC = () => {
                   {allEventsList.map((ev) => {
                     const isChecked = selectedEvents.includes(ev);
                     return (
-                      <div
+                      <label
                         key={ev}
-                        onClick={() => {
-                          setSelectedEvents(prev => 
-                            prev.includes(ev) ? prev.filter(e => e !== ev) : [...prev, ev]
-                          );
-                        }}
                         className={`p-2 rounded border cursor-pointer text-[10px] font-mono flex items-center gap-1.5 ${
-                          isChecked 
-                            ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-300' 
+                          isChecked
+                            ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-300'
                             : 'bg-[#070B12] border-slate-800 text-slate-400'
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={() => {}}
+                          onChange={() => setSelectedEvents(prev =>
+                            prev.includes(ev) ? prev.filter(eventName => eventName !== ev) : [...prev, ev]
+                          )}
+                          aria-label={`Subscribe to ${ev}`}
                           className="rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0"
                         />
                         <span className="truncate">{ev}</span>
-                      </div>
+                      </label>
                     );
                   })}
                 </div>

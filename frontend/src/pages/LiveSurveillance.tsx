@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Grid, LayoutGrid, Monitor, Maximize, Filter, Plus, 
-  Video, Eye, Shield, Camera, RefreshCw, Layers
-} from 'lucide-react';
 import { CameraCard } from '@/components/surveillance/CameraCard';
-import { VideoSourceModal } from '@/components/surveillance/VideoSourceModal';
 import { VideoInspectionModal } from '@/components/surveillance/VideoInspectionModal';
-import { useVideoStore } from '@/stores/videoStore';
+import { VideoSourceModal } from '@/components/surveillance/VideoSourceModal';
 import { Button } from '@/components/ui/Button';
+import { useVideoStore } from '@/stores/videoStore';
+import {
+  Eye,
+  Filter,
+  Grid,LayoutGrid,Monitor,
+  Shield,
+  Video
+} from 'lucide-react';
+import React,{ useEffect,useState } from 'react';
 
 const DEMO_CAMERAS = [
   { id: 'BOP-01', name: 'Border Outpost 1 PTZ', location: 'Sector 4 Red Zone', status: 'online', fps: 30, aiStatus: true, detections: 2, alertLevel: 'critical', zone: 'red' },
@@ -71,12 +74,12 @@ export const LiveSurveillance: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-[#070B12] text-slate-300 overflow-y-auto p-4 md:p-5 space-y-4 custom-scrollbar">
-      
+
       {/* ── TOP ACTION TOOLBAR (WITH SOLDIER / WATCHTOWER SILHOUETTE) ── */}
-      <div 
+      <div
         className="p-4 bg-[#0A0F18] border border-[#1B2536] rounded-xl flex flex-wrap gap-4 justify-between items-center relative overflow-hidden shadow-xl"
         style={{
-          backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.98) 50%, rgba(10, 15, 24, 0.45) 80%, rgba(10, 15, 24, 0.2) 100%), url('/surveillance-header-bg.jpg')`,
+          backgroundImage: `linear-gradient(to right, rgba(10, 15, 24, 0.98) 50%, rgba(10, 15, 24, 0.45) 80%, rgba(10, 15, 24, 0.2) 100%), url('/bg-surveillance.jpg')`,
           backgroundPosition: 'right center',
           backgroundRepeat: 'no-repeat',
           backgroundSize: 'contain'
@@ -98,10 +101,10 @@ export const LiveSurveillance: React.FC = () => {
             </p>
           </div>
         </div>
-        
+
         {/* Controls & Toolbar Actions */}
         <div className="flex items-center flex-wrap gap-3 z-10 font-mono text-xs">
-          
+
           {/* Add / Upload Video Feed */}
           <Button
             size="sm"
@@ -115,8 +118,8 @@ export const LiveSurveillance: React.FC = () => {
           <button
             onClick={handleToggleGlobalAi}
             className={`h-8 px-3 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all border ${
-              globalAi 
-                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 font-bold shadow-sm' 
+              globalAi
+                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 font-bold shadow-sm'
                 : 'bg-[#070B12] text-slate-400 border-[#1E293B] hover:text-white'
             }`}
             title="Toggle AI Bounding Box Overlays"
@@ -128,8 +131,8 @@ export const LiveSurveillance: React.FC = () => {
           <button
             onClick={handleToggleGlobalZones}
             className={`h-8 px-3 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all shadow-lg ${
-              globalZones 
-                ? 'bg-red-600 hover:bg-red-500 text-white border border-red-400/40 shadow-red-950/50' 
+              globalZones
+                ? 'bg-red-600 hover:bg-red-500 text-white border border-red-400/40 shadow-red-950/50'
                 : 'bg-[#070B12] text-slate-400 border-[#1E293B] hover:text-white'
             }`}
             title="Toggle Virtual Perimeter Fences"
@@ -139,33 +142,33 @@ export const LiveSurveillance: React.FC = () => {
 
           {/* Grid Layout Switcher */}
           <div className="flex items-center space-x-1 bg-[#070B12] rounded-lg p-1 border border-[#1E293B] h-8">
-            <button 
-              onClick={() => setGridSize(1)} 
+            <button
+              onClick={() => setGridSize(1)}
               className={`p-1 rounded transition-colors ${gridSize === 1 ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
               title="1-Camera Focus"
             >
               <Monitor className="w-3.5 h-3.5" />
             </button>
-            <button 
-              onClick={() => setGridSize(4)} 
+            <button
+              onClick={() => setGridSize(4)}
               className={`p-1 rounded transition-colors ${gridSize === 4 ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
               title="2x2 Grid View"
             >
               <Grid className="w-3.5 h-3.5" />
             </button>
-            <button 
-              onClick={() => setGridSize(9)} 
+            <button
+              onClick={() => setGridSize(9)}
               className={`p-1 rounded transition-colors ${gridSize === 9 ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
               title="3x3 Grid View"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
             </button>
           </div>
-          
+
           {/* Sector Zone Filter */}
           <div className="flex items-center space-x-2 bg-[#070B12] rounded-lg px-2.5 h-8 border border-[#1E293B] text-xs">
             <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <select 
+            <select
               className="bg-transparent text-slate-200 focus:outline-none cursor-pointer font-mono"
               value={filterZone}
               onChange={(e) => setFilterZone(e.target.value)}
@@ -184,10 +187,10 @@ export const LiveSurveillance: React.FC = () => {
       <div className="flex-grow">
         <div className={`grid gap-4 ${getGridClass()}`}>
           {filteredCameras.slice(0, gridSize).map((cam) => (
-            <CameraCard 
+            <CameraCard
               key={cam.id}
               camera={{
-                ...cam, 
+                ...cam,
                 timestamp: currentTime.split('T')[1].split('.')[0] + ' UTC'
               }}
               onClick={() => openInspection(cam.id)}

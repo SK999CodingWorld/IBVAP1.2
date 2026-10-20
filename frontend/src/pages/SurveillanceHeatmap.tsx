@@ -1,19 +1,35 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Flame, MapPin, Activity, Shield, Users, Car, 
-  AlertTriangle, Moon, Clock, ArrowUpRight,
-  TrendingUp, BarChart3, Zap, Satellite, Mountain,
-  Maximize2, Crosshair, Compass, Video, Eye,
-  Download, RefreshCw, Radio, CheckCircle2,
-  ChevronRight, Volume2, ShieldAlert, Layers
-} from 'lucide-react';
-import { 
-  ResponsiveContainer, AreaChart, Area, XAxis, 
-  YAxis, Tooltip, CartesianGrid 
-} from 'recharts';
+import { analyticsService } from '@/api';
+import { getAuthenticatedMediaUrl } from '@/api/client';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import {
+  Activity,
+  AlertTriangle,
+  Car,
+  CheckCircle2,
+  Compass,
+  Crosshair,
+  Download,
+  Eye,
+  Flame,
+  Moon,
+  Mountain,
+  RefreshCw,
+  Satellite,
+  Users,
+  Video
+} from 'lucide-react';
+import React,{ useEffect,useRef,useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
 
 interface HeatmapSector {
   id: string;
@@ -56,7 +72,7 @@ const DEFAULT_SECTORS: HeatmapSector[] = [
     risk: 'CRITICAL',
     primaryCamera: 'CAM-01',
     cameraName: 'BOP Sector 4 North PTZ',
-    cameraFeed: '/feed-bop01.jpg',
+    cameraFeed: '/camera-perimeter.jpg',
     status: 'High Alert - Active Intrusion Risk'
   },
   {
@@ -73,7 +89,7 @@ const DEFAULT_SECTORS: HeatmapSector[] = [
     risk: 'HIGH',
     primaryCamera: 'BOP-03',
     cameraName: 'Perimeter West Optical',
-    cameraFeed: '/thumb-cam-bop01.jpg',
+    cameraFeed: '/camera-perimeter.jpg',
     status: 'Active Patrol Monitoring'
   },
   {
@@ -90,7 +106,7 @@ const DEFAULT_SECTORS: HeatmapSector[] = [
     risk: 'MEDIUM',
     primaryCamera: 'CHECK-01',
     cameraName: 'Checkpoint Highway ANPR Lane',
-    cameraFeed: '/feed-road01.jpg',
+    cameraFeed: '/bg-traffic.jpg',
     status: 'Vehicle Convoy Screening'
   },
   {
@@ -107,7 +123,7 @@ const DEFAULT_SECTORS: HeatmapSector[] = [
     risk: 'LOW',
     primaryCamera: 'ROAD-02',
     cameraName: 'Approach Road North',
-    cameraFeed: '/health-cam-road02.jpg',
+    cameraFeed: '/camera-vehicle.jpg',
     status: 'Nominal Logistics Transit'
   },
   {
@@ -124,7 +140,7 @@ const DEFAULT_SECTORS: HeatmapSector[] = [
     risk: 'LOW',
     primaryCamera: 'GATE-01',
     cameraName: 'HQ Main Access Gate',
-    cameraFeed: '/thumb-cam-bop02.jpg',
+    cameraFeed: '/camera-checkpoint.jpg',
     status: 'Authorized Personnel Gate'
   }
 ];
@@ -173,7 +189,7 @@ export const SurveillanceHeatmap: React.FC = () => {
   const fetchHeatmapData = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/analytics/heatmap');
+      const res = await analyticsService.heatmap();
       if (res.ok) {
         const data = await res.json();
         if (data.sectors && Array.isArray(data.sectors)) {
@@ -390,7 +406,7 @@ export const SurveillanceHeatmap: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-[#070B12] text-slate-200 overflow-y-auto p-4 md:p-6 space-y-4 font-sans relative">
-      
+
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-5 right-5 z-50 bg-[#0E1726] border border-cyan-500/50 shadow-2xl shadow-cyan-500/20 text-white px-4 py-3 rounded-xl flex items-center gap-3 backdrop-blur-md animate-in fade-in slide-in-from-top-4">
@@ -433,8 +449,8 @@ export const SurveillanceHeatmap: React.FC = () => {
                 key={m.id}
                 onClick={() => setActiveMetric(m.id as any)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeMetric === m.id 
-                    ? `${m.color} shadow-md font-bold` 
+                  activeMetric === m.id
+                    ? `${m.color} shadow-md font-bold`
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -444,7 +460,7 @@ export const SurveillanceHeatmap: React.FC = () => {
           </div>
 
           {/* Sync & Export Buttons */}
-          <button 
+          <button
             onClick={fetchHeatmapData}
             disabled={isLoading}
             title="Refresh Real-time Heatmap Telemetry"
@@ -452,7 +468,7 @@ export const SurveillanceHeatmap: React.FC = () => {
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
-          <button 
+          <button
             onClick={handleExportDossier}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-bold transition-colors cursor-pointer shadow-sm"
           >
@@ -465,7 +481,7 @@ export const SurveillanceHeatmap: React.FC = () => {
       {/* 4 Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Card 1: Total Human Detections */}
-        <div 
+        <div
           onClick={() => setActiveMetric('human')}
           className={`bg-[#0A0F18] border rounded-xl p-4 flex flex-col justify-between transition-all cursor-pointer shadow-lg ${
             activeMetric === 'human' ? 'border-cyan-500 shadow-cyan-500/10' : 'border-[#1B2536] hover:border-cyan-500/40'
@@ -491,7 +507,7 @@ export const SurveillanceHeatmap: React.FC = () => {
         </div>
 
         {/* Card 2: Total Vehicle Detections */}
-        <div 
+        <div
           onClick={() => setActiveMetric('vehicle')}
           className={`bg-[#0A0F18] border rounded-xl p-4 flex flex-col justify-between transition-all cursor-pointer shadow-lg ${
             activeMetric === 'vehicle' ? 'border-amber-500 shadow-amber-500/10' : 'border-[#1B2536] hover:border-amber-500/40'
@@ -517,7 +533,7 @@ export const SurveillanceHeatmap: React.FC = () => {
         </div>
 
         {/* Card 3: Night Movements */}
-        <div 
+        <div
           onClick={() => setActiveMetric('night')}
           className={`bg-[#0A0F18] border rounded-xl p-4 flex flex-col justify-between transition-all cursor-pointer shadow-lg ${
             activeMetric === 'night' ? 'border-purple-500 shadow-purple-500/10' : 'border-[#1B2536] hover:border-purple-500/40'
@@ -543,7 +559,7 @@ export const SurveillanceHeatmap: React.FC = () => {
         </div>
 
         {/* Card 4: Intrusion Hotspots */}
-        <div 
+        <div
           onClick={() => setActiveMetric('intrusions')}
           className={`bg-[#0A0F18] border rounded-xl p-4 flex flex-col justify-between transition-all cursor-pointer shadow-lg ${
             activeMetric === 'intrusions' ? 'border-red-500 shadow-red-500/20' : 'border-red-500/30 hover:border-red-500/60'
@@ -571,42 +587,46 @@ export const SurveillanceHeatmap: React.FC = () => {
 
       {/* Main Grid: Interactive Leaflet Heatmap (Left 7 Cols) + Live Camera & Timeline (Right 5 Cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        
+
         {/* Left: Hardware-Accelerated Leaflet Heatmap */}
         <div className="lg:col-span-7 relative bg-[#070B12] border border-[#1B2536] rounded-2xl overflow-hidden shadow-2xl min-h-[460px] flex flex-col">
-          
-          {/* Leaflet Mount Container */}
-          <div ref={mapContainerRef} className="w-full flex-1 z-0 relative min-h-[460px]" />
+
+          {/* Leaflet Mount Container with instant tactical satellite preview */}
+          <div
+            ref={mapContainerRef}
+            className="w-full flex-1 z-0 relative min-h-[460px]"
+            style={{ backgroundColor: '#070B12' }}
+          />
 
           {/* Top Floating Map Layer Selector */}
           <div className="absolute top-4 left-4 flex items-center gap-1.5 z-10 font-mono text-xs">
-            <button 
+            <button
               onClick={() => setMapMode('satellite')}
               className={`px-2.5 py-1 rounded-lg border font-bold flex items-center gap-1 shadow-md cursor-pointer transition-colors ${
-                mapMode === 'satellite' 
-                  ? 'bg-cyan-500/30 text-cyan-300 border-cyan-500/60 shadow-cyan-500/20' 
+                mapMode === 'satellite'
+                  ? 'bg-cyan-500/30 text-cyan-300 border-cyan-500/60 shadow-cyan-500/20'
                   : 'bg-[#0A0F18]/90 text-slate-400 border-[#1B2536]'
               }`}
             >
               <Satellite className="w-3 h-3 text-cyan-400" />
               Satellite
             </button>
-            <button 
+            <button
               onClick={() => setMapMode('dark')}
               className={`px-2.5 py-1 rounded-lg border font-bold flex items-center gap-1 shadow-md cursor-pointer transition-colors ${
-                mapMode === 'dark' 
-                  ? 'bg-cyan-500/30 text-cyan-300 border-cyan-500/60 shadow-cyan-500/20' 
+                mapMode === 'dark'
+                  ? 'bg-cyan-500/30 text-cyan-300 border-cyan-500/60 shadow-cyan-500/20'
                   : 'bg-[#0A0F18]/90 text-slate-400 border-[#1B2536]'
               }`}
             >
               <Moon className="w-3 h-3 text-purple-400" />
               Dark Tactical
             </button>
-            <button 
+            <button
               onClick={() => setMapMode('terrain')}
               className={`px-2.5 py-1 rounded-lg border font-bold flex items-center gap-1 shadow-md cursor-pointer transition-colors ${
-                mapMode === 'terrain' 
-                  ? 'bg-cyan-500/30 text-cyan-300 border-cyan-500/60 shadow-cyan-500/20' 
+                mapMode === 'terrain'
+                  ? 'bg-cyan-500/30 text-cyan-300 border-cyan-500/60 shadow-cyan-500/20'
                   : 'bg-[#0A0F18]/90 text-slate-400 border-[#1B2536]'
               }`}
             >
@@ -617,21 +637,21 @@ export const SurveillanceHeatmap: React.FC = () => {
 
           {/* Floating Map Zoom / Recenter Controls */}
           <div className="absolute top-16 left-4 flex flex-col gap-1.5 z-10 font-mono">
-            <button 
+            <button
               onClick={() => mapInstanceRef.current?.zoomIn()}
               title="Zoom In"
               className="w-7 h-7 bg-[#0A0F18]/90 hover:bg-[#0E1624] border border-[#1B2536] rounded-lg flex items-center justify-center text-white text-base font-bold shadow-lg cursor-pointer"
             >
               +
             </button>
-            <button 
+            <button
               onClick={() => mapInstanceRef.current?.zoomOut()}
               title="Zoom Out"
               className="w-7 h-7 bg-[#0A0F18]/90 hover:bg-[#0E1624] border border-[#1B2536] rounded-lg flex items-center justify-center text-white text-base font-bold shadow-lg cursor-pointer"
             >
               −
             </button>
-            <button 
+            <button
               onClick={() => {
                 if (mapInstanceRef.current) {
                   mapInstanceRef.current.flyTo([27.055, 88.455], 12);
@@ -670,7 +690,7 @@ export const SurveillanceHeatmap: React.FC = () => {
 
         {/* Right Stack: Selected Sector Live CCTV Preview (Top) + Interactive 24h AreaChart (Bottom) */}
         <div className="lg:col-span-5 space-y-4 flex flex-col justify-between font-mono">
-          
+
           {/* Top Card: Live Sector CCTV Preview */}
           <div className="bg-[#0A0F18] border border-[#1B2536] rounded-xl p-4 shadow-xl space-y-3">
             <div className="flex items-center justify-between border-b border-[#1B2536] pb-2.5 text-xs">
@@ -716,16 +736,16 @@ export const SurveillanceHeatmap: React.FC = () => {
 
             {/* Video Snapshot / Live Stream with HUD Overlay */}
             <div className="relative rounded-lg overflow-hidden border border-[#1E293B] aspect-video bg-black shadow-lg">
-              <img 
+              <img
                 src={
-                  previewMode === 'mjpeg' ? '/video_feed' :
-                  previewMode === 'heatmap' ? '/api/stream/heatmap' :
+                  previewMode === 'mjpeg' ? getAuthenticatedMediaUrl('/video_feed') :
+                  previewMode === 'heatmap' ? getAuthenticatedMediaUrl('/api/v1/stream/heatmap') :
                   selectedSector.cameraFeed
-                } 
+                }
                 alt={selectedSector.name}
                 className={`w-full h-full object-cover transition-all duration-300 ${isFlirMode ? 'hue-rotate-180 invert contrast-125' : ''}`}
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/feed-road01.jpg';
+                  (e.target as HTMLImageElement).src = '/bg-traffic.jpg';
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
@@ -757,21 +777,21 @@ export const SurveillanceHeatmap: React.FC = () => {
 
             {/* Quick Actions Bar */}
             <div className="flex items-center justify-between gap-2 pt-1">
-              <button 
+              <button
                 onClick={() => {
                   setIsFlirMode(!isFlirMode);
                   showToast(isFlirMode ? 'Switched to Optical Day Sentry feed' : 'Calibrated FLIR Infrared Thermal Spectrum mode');
                 }}
                 className={`flex-1 py-1.5 rounded-lg border text-[11px] font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
-                  isFlirMode 
-                    ? 'bg-purple-500/25 border-purple-500/60 text-purple-300' 
+                  isFlirMode
+                    ? 'bg-purple-500/25 border-purple-500/60 text-purple-300'
                     : 'bg-[#070B12] hover:bg-slate-800 border-[#1E293B] text-slate-300'
                 }`}
               >
                 <Moon className="w-3.5 h-3.5 text-purple-400" />
                 <span>{isFlirMode ? 'FLIR Active' : 'Thermal FLIR'}</span>
               </button>
-              <button 
+              <button
                 onClick={() => navigate('/surveillance')}
                 className="flex-1 py-1.5 rounded-lg bg-[#070B12] hover:bg-slate-800 border border-[#1E293B] text-cyan-300 text-[11px] font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
@@ -814,41 +834,41 @@ export const SurveillanceHeatmap: React.FC = () => {
                   <CartesianGrid stroke="#1E293B" strokeDasharray="3 3" opacity={0.5} />
                   <XAxis dataKey="hour" stroke="#64748B" fontSize={9} tickLine={false} />
                   <YAxis stroke="#64748B" fontSize={9} tickLine={false} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#0B111B', 
-                      borderColor: '#1E293B', 
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0B111B',
+                      borderColor: '#1E293B',
                       borderRadius: '8px',
                       fontSize: '11px',
                       fontFamily: 'monospace'
                     }}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="human" 
+                  <Area
+                    type="monotone"
+                    dataKey="human"
                     name="Human Activity"
-                    stroke="#06B6D4" 
+                    stroke="#06B6D4"
                     strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#heatHumanGradient)" 
+                    fillOpacity={1}
+                    fill="url(#heatHumanGradient)"
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="vehicle" 
+                  <Area
+                    type="monotone"
+                    dataKey="vehicle"
                     name="Vehicles"
-                    stroke="#F59E0B" 
+                    stroke="#F59E0B"
                     strokeWidth={1.5}
-                    fillOpacity={1} 
-                    fill="url(#heatVehicleGradient)" 
+                    fillOpacity={1}
+                    fill="url(#heatVehicleGradient)"
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="intrusions" 
+                  <Area
+                    type="monotone"
+                    dataKey="intrusions"
                     name="Intrusions"
-                    stroke="#EF4444" 
+                    stroke="#EF4444"
                     strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#heatIntrusionGradient)" 
+                    fillOpacity={1}
+                    fill="url(#heatIntrusionGradient)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -885,12 +905,12 @@ export const SurveillanceHeatmap: React.FC = () => {
           {sectors.map((sec) => {
             const isSelected = selectedSector.id === sec.id;
             return (
-              <div 
-                key={sec.id} 
+              <div
+                key={sec.id}
                 onClick={() => handleSelectSector(sec)}
                 className={`bg-[#0A0F18] border rounded-xl p-3.5 space-y-2.5 transition-all cursor-pointer shadow-lg ${
-                  isSelected 
-                    ? 'border-cyan-500/80 bg-cyan-950/15 shadow-cyan-500/15 ring-1 ring-cyan-500/50' 
+                  isSelected
+                    ? 'border-cyan-500/80 bg-cyan-950/15 shadow-cyan-500/15 ring-1 ring-cyan-500/50'
                     : 'border-[#1B2536] hover:border-slate-700'
                 }`}
               >

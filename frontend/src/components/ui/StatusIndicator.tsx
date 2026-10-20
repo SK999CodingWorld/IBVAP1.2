@@ -1,4 +1,4 @@
-import { statusColor, cn } from "@/lib/utils"
+import { cn,statusColor } from "@/lib/utils";
 
 export const StatusIndicator = ({ status, className }: { status: string, className?: string }) => {
   return (

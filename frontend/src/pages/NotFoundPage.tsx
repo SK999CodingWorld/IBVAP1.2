@@ -1,9 +1,9 @@
+import { ArrowLeft,Monitor,ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ShieldAlert, ArrowLeft, Monitor, Compass, Radio } from 'lucide-react';
 
 export const NotFoundPage = () => (
   <div className="flex flex-col items-center justify-center min-h-[80vh] p-6 text-center bg-[#070B12] text-slate-200 relative overflow-hidden">
-    
+
     {/* Subtle Background Radial Radar Rings */}
     <div className="absolute w-[500px] h-[500px] rounded-full border border-cyan-500/10 pointer-events-none animate-pulse" />
     <div className="absolute w-[350px] h-[350px] rounded-full border border-cyan-500/15 pointer-events-none" />
@@ -11,7 +11,7 @@ export const NotFoundPage = () => (
 
     {/* Center Tactical Warning Box */}
     <div className="relative z-10 max-w-md w-full bg-[#0A0F18]/90 border border-slate-800/90 rounded-2xl p-8 shadow-2xl backdrop-blur-md space-y-5">
-      
+
       {/* Icon Badge */}
       <div className="flex justify-center">
         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
@@ -50,14 +50,14 @@ export const NotFoundPage = () => (
 
       {/* Action Buttons */}
       <div className="pt-2 flex flex-col sm:flex-row gap-3">
-        <Link 
-          to="/command-center" 
+        <Link
+          to="/command-center"
           className="flex-1 py-2.5 px-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-cyan-500/20 flex items-center justify-center gap-1.5"
         >
           <ArrowLeft size={14} /> Command Center
         </Link>
-        <Link 
-          to="/surveillance" 
+        <Link
+          to="/surveillance"
           className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-xl transition-all border border-slate-700 flex items-center justify-center gap-1.5"
         >
           <Monitor size={14} /> Live Wall

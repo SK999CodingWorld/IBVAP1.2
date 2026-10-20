@@ -45,7 +45,7 @@ check_os() {
 
 install_dependencies() {
     log_info "Installing system dependencies..."
-    
+
     if command -v apt-get &> /dev/null; then
         apt-get update
         apt-get install -y \
@@ -92,12 +92,12 @@ setup_directories() {
 
 install_python_deps() {
     log_info "Installing Python dependencies..."
-    
+
     cd "$INSTALL_DIR"
     sudo -u "$SERVICE_USER" python3 -m venv venv
     sudo -u "$SERVICE_USER" venv/bin/pip install --upgrade pip
     sudo -u "$SERVICE_USER" venv/bin/pip install -r requirements.txt
-    
+
     # Download models
     sudo -u "$SERVICE_USER" venv/bin/python -c "
 from ultralytics import YOLO
@@ -118,7 +118,7 @@ setup_postgresql() {
     log_info "Configuring PostgreSQL..."
     systemctl enable postgresql
     systemctl start postgresql
-    
+
     sudo -u postgres psql -c "CREATE USER ibvap WITH PASSWORD 'ibvap_secret';" 2>/dev/null || true
     sudo -u postgres psql -c "CREATE DATABASE ibvap OWNER ibvap;" 2>/dev/null || true
     sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ibvap TO ibvap;" 2>/dev/null || true
@@ -126,10 +126,10 @@ setup_postgresql() {
 
 setup_supervisor() {
     log_info "Configuring Supervisor..."
-    
+
     cat > /etc/supervisor/conf.d/ibvap.conf << EOF
 [program:ibvap-api]
-command=$INSTALL_DIR/venv/bin/python main.py
+command=$INSTALL_DIR/venv/bin/python run.py
 directory=$INSTALL_DIR
 user=$SERVICE_USER
 autostart=true
@@ -178,21 +178,21 @@ redirect_stderr=true
 stdout_logfile=$LOG_DIR/recorder.log
 environment=PYTHONPATH="$INSTALL_DIR",REDIS_HOST="localhost",REDIS_PORT="6379"
 EOF
-    
+
     supervisorctl reread
     supervisorctl update
 }
 
 setup_nginx() {
     log_info "Configuring Nginx..."
-    
+
     cat > /etc/nginx/sites-available/ibvap << 'EOF'
 server {
     listen 80;
     server_name _;
-    
+
     client_max_body_size 100M;
-    
+
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
@@ -201,7 +201,7 @@ server {
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
     }
-    
+
     location /api {
         proxy_pass http://localhost:8000;
         proxy_http_version 1.1;
@@ -210,7 +210,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-    
+
     location /ws {
         proxy_pass http://localhost:8000;
         proxy_http_version 1.1;
@@ -220,7 +220,7 @@ server {
     }
 }
 EOF
-    
+
     ln -sf /etc/nginx/sites-available/ibvap /etc/nginx/sites-enabled/
     rm -f /etc/nginx/sites-enabled/default
     nginx -t && systemctl reload nginx
@@ -245,7 +245,7 @@ setup_firewall() {
 
 create_env() {
     log_info "Creating environment file..."
-    
+
     cat > "$INSTALL_DIR/.env" << EOF
 # Redis
 REDIS_HOST=localhost
@@ -296,7 +296,7 @@ API_WORKERS=4
 LOG_LEVEL=INFO
 LOG_FORMAT=json
 EOF
-    
+
     chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/.env"
 }
 
@@ -316,7 +316,7 @@ build_dashboard() {
 
 main() {
     echo "Starting IBVAP installation..."
-    
+
     check_root
     check_os
     install_dependencies
@@ -330,7 +330,7 @@ main() {
     setup_firewall
     create_env
     build_dashboard
-    
+
     log_info "=========================================="
     log_info "IBVAP installation complete!"
     log_info "=========================================="

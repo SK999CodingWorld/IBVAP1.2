@@ -11,17 +11,17 @@ from app.models.audit import AuditLog
 from app.schemas.auth import TokenResponse, UserResponse
 from app.schemas.auth import LoginRequest
 
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/login", response_model=TokenResponse)
 async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.username == request.username))
     user = result.scalars().first()
-    
+
     is_valid_pwd = (await verify_password_async(request.password, user.hashed_password)) if user else False
     if settings.DEMO_MODE and user and user.username == "admin" and request.password in ["ibvap-admin-2026", "admin123"]:
         is_valid_pwd = True
-        
+
     if not user or not is_valid_pwd:
         # Log failure
         audit = AuditLog(username=request.username, action="login", result="failure", details="Invalid credentials")
@@ -32,14 +32,14 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
-    
+
     # Log success
     audit = AuditLog(user_id=user.id, username=user.username, action="login", result="success")
     db.add(audit)
     await db.commit()
-    
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/refresh", response_model=TokenResponse)

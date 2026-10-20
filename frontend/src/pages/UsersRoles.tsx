@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
-import { 
-  Users, Shield, UserPlus, Edit2, Trash2, CheckCircle2, XCircle, Search, 
-  Filter, MoreVertical, ShieldCheck, Lock, UserCheck, UserX, KeyRound, 
-  X, Check, AlertCircle, ArrowUpRight
+import {
+  ArrowUpRight,
+  Edit2,
+  Filter,MoreVertical,
+  Search,
+  Shield,
+  Trash2,
+  UserCheck,
+  UserPlus,
+  Users,
+  UserX,
+  X
 } from 'lucide-react';
+import React,{ useState } from 'react';
 
 interface UserItem {
   id: number;
@@ -20,92 +28,92 @@ interface UserItem {
 }
 
 const initialUsers: UserItem[] = [
-  { 
-    id: 1, 
-    username: 'admin', 
-    name: 'System Administrator', 
-    email: 'admin@ibvap.gov', 
-    role: 'Administrator', 
+  {
+    id: 1,
+    username: 'admin',
+    name: 'System Administrator',
+    email: 'admin@ibvap.gov',
+    role: 'Administrator',
     roleColor: 'bg-red-500/10 text-red-400 border-red-500/30',
-    status: 'Active', 
+    status: 'Active',
     lastLogin: '10 mins ago',
     clearance: 'Level 5',
     clearanceColor: 'bg-red-500/20 text-red-400 border-red-500/40',
     avatarBg: 'bg-red-600'
   },
-  { 
-    id: 2, 
-    username: 'commander01', 
-    name: 'John Doe', 
-    email: 'j.doe@ibvap.gov', 
-    role: 'Commander', 
+  {
+    id: 2,
+    username: 'commander01',
+    name: 'John Doe',
+    email: 'j.doe@ibvap.gov',
+    role: 'Commander',
     roleColor: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-    status: 'Active', 
+    status: 'Active',
     lastLogin: '1 hour ago',
     clearance: 'Level 4',
     clearanceColor: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
     avatarBg: 'bg-blue-600'
   },
-  { 
-    id: 3, 
-    username: 'operator01', 
-    name: 'Jane Smith', 
-    email: 'j.smith@ibvap.gov', 
-    role: 'Operator', 
+  {
+    id: 3,
+    username: 'operator01',
+    name: 'Jane Smith',
+    email: 'j.smith@ibvap.gov',
+    role: 'Operator',
     roleColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-    status: 'Active', 
+    status: 'Active',
     lastLogin: '3 hours ago',
     clearance: 'Level 3',
     clearanceColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40',
     avatarBg: 'bg-emerald-600'
   },
-  { 
-    id: 4, 
-    username: 'analyst01', 
-    name: 'Bob Wilson', 
-    email: 'b.wilson@ibvap.gov', 
-    role: 'Analyst', 
+  {
+    id: 4,
+    username: 'analyst01',
+    name: 'Bob Wilson',
+    email: 'b.wilson@ibvap.gov',
+    role: 'Analyst',
     roleColor: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
-    status: 'Inactive', 
+    status: 'Inactive',
     lastLogin: '2 days ago',
     clearance: 'Level 2',
     clearanceColor: 'bg-blue-500/20 text-blue-400 border-blue-500/40',
     avatarBg: 'bg-purple-600'
   },
-  { 
-    id: 5, 
-    username: 'auditor01', 
-    name: 'Alice Brown', 
-    email: 'a.brown@ibvap.gov', 
-    role: 'Auditor', 
+  {
+    id: 5,
+    username: 'auditor01',
+    name: 'Alice Brown',
+    email: 'a.brown@ibvap.gov',
+    role: 'Auditor',
     roleColor: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    status: 'Active', 
+    status: 'Active',
     lastLogin: '5 mins ago',
     clearance: 'Level 4',
     clearanceColor: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
     avatarBg: 'bg-amber-600'
   },
-  { 
-    id: 6, 
-    username: 'viewer01', 
-    name: 'Robert Davis', 
-    email: 'r.davis@ibvap.gov', 
-    role: 'Viewer', 
+  {
+    id: 6,
+    username: 'viewer01',
+    name: 'Robert Davis',
+    email: 'r.davis@ibvap.gov',
+    role: 'Viewer',
     roleColor: 'bg-slate-500/10 text-slate-300 border-slate-500/30',
-    status: 'Active', 
+    status: 'Active',
     lastLogin: '1 hour ago',
     clearance: 'Level 1',
     clearanceColor: 'bg-slate-500/20 text-slate-400 border-slate-500/40',
     avatarBg: 'bg-slate-600'
   },
-  { 
-    id: 7, 
-    username: 'support01', 
-    name: 'Sarah Connor', 
-    email: 'support@ibvap.gov', 
-    role: 'Support', 
+  {
+    id: 7,
+    username: 'support01',
+    name: 'Sarah Connor',
+    email: 'support@ibvap.gov',
+    role: 'Support',
     roleColor: 'bg-pink-500/10 text-pink-400 border-pink-500/30',
-    status: 'Active', 
+    status: 'Active',
     lastLogin: '4 hours ago',
     clearance: 'Level 2',
     clearanceColor: 'bg-pink-500/20 text-pink-400 border-pink-500/40',
@@ -114,44 +122,44 @@ const initialUsers: UserItem[] = [
 ];
 
 const rolesData = [
-  { 
-    name: 'Administrator', 
-    color: 'bg-red-500/15 text-red-400 border-red-500/30', 
+  {
+    name: 'Administrator',
+    color: 'bg-red-500/15 text-red-400 border-red-500/30',
     clearance: 'Level 5',
     desc: 'Full system access, infrastructure configuration, cryptographic master keys and user management.',
     permissions: ['All System Modules', 'Root Terminal', 'User Admin', 'KMS Key Custody', 'Audit Purge']
   },
-  { 
-    name: 'Commander', 
-    color: 'bg-blue-500/15 text-blue-400 border-blue-500/30', 
+  {
+    name: 'Commander',
+    color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
     clearance: 'Level 4',
     desc: 'Tactical oversight, alert dispatching, multi-camera tracking approval, and incident resolution.',
     permissions: ['Command Center', 'Map Intelligence', 'PTZ Override', 'Incident Escalation', 'Export Evidence']
   },
-  { 
-    name: 'Operator', 
-    color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', 
+  {
+    name: 'Operator',
+    color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
     clearance: 'Level 3',
     desc: 'Real-time border surveillance, manual PTZ steer, quick incident logging, and live perimeter monitoring.',
     permissions: ['Live Surveillance', 'PTZ Manual', 'Virtual Fences', 'Acknowledge Alerts']
   },
-  { 
-    name: 'Analyst', 
-    color: 'bg-purple-500/15 text-purple-400 border-purple-500/30', 
+  {
+    name: 'Analyst',
+    color: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
     clearance: 'Level 2',
     desc: 'Historical intelligence queries, ANPR database search, heatmap trends, and forensic video analysis.',
     permissions: ['Analytics Hub', 'Video Analyzer', 'Heatmaps', 'ANPR Search', 'Read-Only Logs']
   },
-  { 
-    name: 'Auditor', 
-    color: 'bg-amber-500/15 text-amber-400 border-amber-500/30', 
+  {
+    name: 'Auditor',
+    color: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
     clearance: 'Level 4',
     desc: 'Cryptographic compliance verification, immutable audit trail inspection, and tamper-proof verification.',
     permissions: ['Audit Log', 'Evidence Integrity Check', 'Chain of Custody', 'Compliance Export']
   },
-  { 
-    name: 'Viewer', 
-    color: 'bg-slate-500/15 text-slate-300 border-slate-500/30', 
+  {
+    name: 'Viewer',
+    color: 'bg-slate-500/15 text-slate-300 border-slate-500/30',
     clearance: 'Level 1',
     desc: 'Public or inter-agency dashboard viewing with redacted streams and zero control privileges.',
     permissions: ['Redacted Live Feeds', 'Public Status Page']
@@ -165,7 +173,10 @@ export function UsersRoles() {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'Active' | 'Inactive'>('ALL');
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [roles, setRoles] = useState(rolesData);
+  const [message, setMessage] = useState('');
+
   // New User Form State
   const [newUsername, setNewUsername] = useState('');
   const [newName, setNewName] = useState('');
@@ -191,7 +202,7 @@ export function UsersRoles() {
   };
 
   const toggleSelectUser = (id: number) => {
-    setSelectedUserIds(prev => 
+    setSelectedUserIds(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
   };
@@ -205,7 +216,17 @@ export function UsersRoles() {
     e.preventDefault();
     if (!newUsername || !newEmail) return;
 
-    const roleObj = rolesData.find(r => r.name === newRole);
+    const roleObj = roles.find(r => r.name === newRole);
+    if (editingUserId !== null) {
+      setUsers(current => current.map(user => user.id === editingUserId ? {
+        ...user, username: newUsername.trim(), name: newName.trim() || newUsername.trim(), email: newEmail.trim(), role: newRole,
+        roleColor: roleObj?.color || user.roleColor, clearance: newClearance,
+      } : user));
+      setMessage(`User ${newUsername.trim()} updated locally.`);
+      setEditingUserId(null);
+      setShowAddModal(false);
+      return;
+    }
     const newUser: UserItem = {
       id: Date.now(),
       username: newUsername,
@@ -230,13 +251,38 @@ export function UsersRoles() {
     setNewEmail('');
   };
 
+  const openUserEditor = (user: UserItem) => {
+    setEditingUserId(user.id);
+    setNewUsername(user.username);
+    setNewName(user.name);
+    setNewEmail(user.email);
+    setNewRole(user.role);
+    setNewClearance(user.clearance);
+    setShowAddModal(true);
+  };
+
+  const editRole = (roleName: string) => {
+    const currentRole = roles.find(role => role.name === roleName);
+    if (!currentRole) return;
+    const description = window.prompt('Update role description', currentRole.desc);
+    if (description === null) return;
+    const permissions = window.prompt('Edit permissions (one per line)', currentRole.permissions.join('\n'));
+    if (permissions === null) return;
+    setRoles(current => current.map(role => role.name === roleName ? {
+      ...role, desc: description.trim() || role.desc,
+      permissions: permissions.split('\n').map(value => value.trim()).filter(Boolean),
+    } : role));
+    setMessage(`${roleName} permissions updated locally.`);
+  };
+
   const activeUsersCount = users.filter(u => u.status === 'Active').length;
   const inactiveUsersCount = users.filter(u => u.status === 'Inactive').length;
 
   return (
     <div className="p-4 md:p-6 h-full flex flex-col bg-[#070B12] text-slate-200 overflow-y-auto space-y-5">
-      
+
       {/* Top Header */}
+      {message && <div role="status" className="text-xs text-cyan-300">{message}<button className="ml-3 underline" onClick={() => setMessage('')}>Dismiss</button></div>}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#0A0F18]/90 border border-slate-800/80 p-4 rounded-xl shadow-lg backdrop-blur-md">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
@@ -252,7 +298,7 @@ export function UsersRoles() {
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input 
+            <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -261,7 +307,7 @@ export function UsersRoles() {
             />
           </div>
 
-          <button 
+          <button
             onClick={() => setStatusFilter(prev => prev === 'ALL' ? 'Active' : prev === 'Active' ? 'Inactive' : 'ALL')}
             className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-colors ${
               statusFilter !== 'ALL' ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400' : 'bg-[#080E18] border-slate-800 text-slate-300 hover:border-slate-700'
@@ -271,7 +317,7 @@ export function UsersRoles() {
             <span>Filter: {statusFilter}</span>
           </button>
 
-          <button 
+          <button
             onClick={() => setShowAddModal(true)}
             className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-md shadow-cyan-500/20 transition-all"
           >
@@ -393,7 +439,7 @@ export function UsersRoles() {
             {selectedUserIds.length > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-400">{selectedUserIds.length} selected</span>
-                <button 
+                <button
                   onClick={() => setSelectedUserIds([])}
                   className="text-xs text-red-400 hover:text-red-300 font-semibold px-2 py-1 bg-red-500/10 rounded"
                 >
@@ -408,7 +454,7 @@ export function UsersRoles() {
               <thead className="text-[11px] text-slate-400 uppercase tracking-wider bg-[#080E18] border-b border-slate-800/80">
                 <tr>
                   <th className="py-3 px-4 w-10">
-                    <input 
+                    <input
                       type="checkbox"
                       checked={selectedUserIds.length > 0 && selectedUserIds.length === filteredUsers.length}
                       onChange={toggleSelectAll}
@@ -429,14 +475,14 @@ export function UsersRoles() {
                   const initials = u.username.slice(0, 2).toUpperCase();
 
                   return (
-                    <tr 
-                      key={u.id} 
+                    <tr
+                      key={u.id}
                       className={`hover:bg-slate-800/30 transition-colors ${
                         isSelected ? 'bg-cyan-500/5' : ''
                       }`}
                     >
                       <td className="py-3 px-4">
-                        <input 
+                        <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelectUser(u.id)}
@@ -480,21 +526,24 @@ export function UsersRoles() {
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button 
+                          <button onClick={() => openUserEditor(u)}
                             title="Edit User"
                             className="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-cyan-400 transition-colors"
                           >
                             <Edit2 size={14} />
                           </button>
-                          <button 
+                          <button
                             title="Delete User"
                             onClick={() => deleteUser(u.id)}
                             className="p-1.5 hover:bg-red-500/10 rounded text-slate-400 hover:text-red-400 transition-colors"
                           >
                             <Trash2 size={14} />
                           </button>
-                          <button 
-                            title="More Options"
+                          <button onClick={() => {
+                            setUsers(current => current.map(user => user.id === u.id ? { ...user, status: user.status === 'Active' ? 'Inactive' : 'Active' } : user));
+                            setMessage(`${u.username} is now ${u.status === 'Active' ? 'inactive' : 'active'}.`);
+                          }}
+                            title={u.status === 'Active' ? 'Deactivate User' : 'Activate User'}
                             className="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
                           >
                             <MoreVertical size={14} />
@@ -511,7 +560,7 @@ export function UsersRoles() {
       ) : (
         /* Roles & Permissions Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {rolesData.map(r => (
+          {roles.map(r => (
             <div key={r.name} className="bg-[#0B111B] border border-slate-800/90 rounded-xl p-5 flex flex-col justify-between hover:border-slate-700 transition-all">
               <div>
                 <div className="flex items-start justify-between mb-3">
@@ -526,7 +575,7 @@ export function UsersRoles() {
                   <Shield size={18} className="text-slate-500" />
                 </div>
                 <p className="text-slate-400 text-xs mt-2 leading-relaxed">{r.desc}</p>
-                
+
                 <div className="mt-4 pt-3 border-t border-slate-800/60">
                   <div className="text-[11px] font-semibold text-slate-300 mb-2">Granted Permissions:</div>
                   <div className="flex flex-wrap gap-1.5">
@@ -543,7 +592,7 @@ export function UsersRoles() {
                 <span className="text-[11px] text-slate-500">
                   {users.filter(u => u.role === r.name).length} Users Assigned
                 </span>
-                <button className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
+                <button onClick={() => editRole(r.name)} className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
                   Edit Role <ArrowUpRight size={12} />
                 </button>
               </div>
@@ -558,9 +607,9 @@ export function UsersRoles() {
           <div className="bg-[#0A0F18] border border-slate-800 rounded-xl max-w-md w-full p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-cyan-400" /> Enroll New User
+                <UserPlus className="w-4 h-4 text-cyan-400" /> {editingUserId === null ? 'Enroll New User' : 'Edit User'}
               </h3>
-              <button 
+              <button
                 onClick={() => setShowAddModal(false)}
                 className="text-slate-400 hover:text-white"
               >
@@ -571,8 +620,8 @@ export function UsersRoles() {
             <form onSubmit={handleCreateUser} className="space-y-3 text-xs">
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">Username</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   required
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
@@ -583,8 +632,8 @@ export function UsersRoles() {
 
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">Full Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="e.g. Marcus Vance"
@@ -594,8 +643,8 @@ export function UsersRoles() {
 
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">Email Address</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   required
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
@@ -607,12 +656,12 @@ export function UsersRoles() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-300 font-semibold mb-1">Assigned Role</label>
-                  <select 
+                  <select
                     value={newRole}
                     onChange={(e) => setNewRole(e.target.value)}
                     className="w-full bg-[#070B12] border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-cyan-500"
                   >
-                    {rolesData.map(r => (
+                {roles.map(r => (
                       <option key={r.name} value={r.name}>{r.name}</option>
                     ))}
                   </select>
@@ -620,7 +669,7 @@ export function UsersRoles() {
 
                 <div>
                   <label className="block text-slate-300 font-semibold mb-1">Security Clearance</label>
-                  <select 
+                  <select
                     value={newClearance}
                     onChange={(e) => setNewClearance(e.target.value)}
                     className="w-full bg-[#070B12] border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-cyan-500"
@@ -635,18 +684,18 @@ export function UsersRoles() {
               </div>
 
               <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
                   className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold shadow-md shadow-cyan-500/20"
                 >
-                  Create User
+                  {editingUserId === null ? 'Create User' : 'Save User'}
                 </button>
               </div>
             </form>

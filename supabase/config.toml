@@ -1,0 +1,6 @@
+project_id = "ibvap"
+
+[db]
+[db.migrations]
+enabled = true
+schema_paths = []

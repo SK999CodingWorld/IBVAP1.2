@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 270" role="img" aria-labelledby="title desc">
+  <title id="title">IBVAP — Border Video Intelligence</title>
+  <desc id="desc">Emerald shield with a camera aperture and border horizon, alongside the white IBVAP wordmark.</desc>
+  <defs>
+    <mask id="aperture" maskUnits="userSpaceOnUse" x="62" y="31" width="126" height="126">
+      <circle cx="125" cy="94" r="57" fill="white"/>
+      <g fill="none" stroke="black" stroke-width="8" stroke-linecap="round">
+        <path d="M104 42 133 83"/>
+        <path d="m161 57-27 45"/>
+        <path d="m181 96-51 1"/>
+        <path d="m168 140-39-31"/>
+        <path d="m119 151 4-51"/>
+        <path d="m76 126 44-25"/>
+        <path d="m78 72 45 22"/>
+      </g>
+    </mask>
+  </defs>
+
+  <g fill="none" stroke="#10B981" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M125 14 231 55v73c0 69-106 126-106 126S19 197 19 128V55z" stroke-width="12"/>
+    <path d="M29 159h192" stroke-width="10"/>
+    <path d="M47 176h60l18 12 18-12h60" stroke-width="8"/>
+  </g>
+  <circle cx="125" cy="94" r="57" fill="#F8FAFC" mask="url(#aperture)"/>
+  <circle cx="125" cy="94" r="10" fill="#22D3EE"/>
+
+  <text x="278" y="139" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="132" font-weight="800" letter-spacing="1">IBVAP</text>
+  <text x="284" y="197" fill="#94A3B8" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="500" letter-spacing="8">BORDER VIDEO INTELLIGENCE</text>
+</svg>

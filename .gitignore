@@ -79,6 +79,8 @@ test.mp4
 # IDE & Editor artifacts
 .vscode/
 **/.vscode/
+.vercel/
+**/.vercel/
 .idea/
 **/.idea/
 *.sublime-project

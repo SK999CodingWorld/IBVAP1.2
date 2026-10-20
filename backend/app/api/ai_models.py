@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional
 import time
 import random
 
-router = APIRouter(prefix="/api/ai-models", tags=["ai-models"])
+router = APIRouter(prefix="/ai-models", tags=["ai-models"])
 
 AI_MODELS_DB = [
     {
@@ -168,7 +168,7 @@ async def test_model(model_id: str, payload: Dict[str, Any] = Body(default={})):
     target = next((m for m in AI_MODELS_DB if m["id"] == model_id), None)
     if not target:
         raise HTTPException(status_code=404, detail="AI Model pipeline not found")
-    
+
     # Simulate execution telemetry
     jitter = random.uniform(-1.5, 2.0)
     measured_latency = round(target["latency_ms"] + jitter, 1)

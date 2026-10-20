@@ -1,32 +1,34 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy,Suspense,useEffect,type ReactNode } from 'react';
+import { BrowserRouter,Navigate,Route,Routes } from 'react-router-dom';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { DashboardLayout } from './layouts/DashboardLayout';
-import { LoginPage } from './pages/LoginPage';
-import { CommandCenter } from './pages/CommandCenter';
-import { LiveSurveillance } from './pages/LiveSurveillance';
-import { CameraManagement } from './pages/CameraManagement';
-import { CameraHealth } from './pages/CameraHealth';
-import { NotFoundPage } from './pages/NotFoundPage';
-import { AlertsPage } from './pages/AlertsPage';
-import { IncidentsPage } from './pages/IncidentsPage';
-import { PeopleObjects } from './pages/PeopleObjects';
-import { MultiCameraTracking } from './pages/MultiCameraTracking';
-import { ANPRPage } from './pages/ANPRPage';
-import { VirtualFences } from './pages/VirtualFences';
-import { MapIntelligence } from './pages/MapIntelligence';
-import { EvidenceVault } from './pages/EvidenceVault';
-import { AuditLog } from './pages/AuditLog';
-import { SecurityCenter } from './pages/SecurityCenter';
-import { UsersRoles } from './pages/UsersRoles';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { SystemHealth } from './pages/SystemHealth';
-import { SettingsPage } from './pages/SettingsPage';
-import { AIModelCenter } from './pages/AIModelCenter';
-import { VideoAnalyzer } from './pages/VideoAnalyzer';
-import { SurveillanceHeatmap } from './pages/SurveillanceHeatmap';
 import { useAuthStore } from './stores/authStore';
-import { useEffect } from 'react';
 
-const AuthGuard = ({ children }: { children: React.ReactNode }) => {
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const CommandCenter = lazy(() => import('./pages/CommandCenter'));
+const LiveSurveillance = lazy(() => import('./pages/LiveSurveillance'));
+const CameraManagement = lazy(() => import('./pages/CameraManagement'));
+const CameraHealth = lazy(() => import('./pages/CameraHealth'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const AlertsPage = lazy(() => import('./pages/AlertsPage'));
+const IncidentsPage = lazy(() => import('./pages/IncidentsPage').then((module) => ({ default: module.IncidentsPage })));
+const PeopleObjects = lazy(() => import('./pages/PeopleObjects'));
+const MultiCameraTracking = lazy(() => import('./pages/MultiCameraTracking'));
+const ANPRPage = lazy(() => import('./pages/ANPRPage'));
+const VirtualFences = lazy(() => import('./pages/VirtualFences'));
+const MapIntelligence = lazy(() => import('./pages/MapIntelligence'));
+const EvidenceVault = lazy(() => import('./pages/EvidenceVault'));
+const AuditLog = lazy(() => import('./pages/AuditLog'));
+const SecurityCenter = lazy(() => import('./pages/SecurityCenter'));
+const UsersRoles = lazy(() => import('./pages/UsersRoles'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const SystemHealth = lazy(() => import('./pages/SystemHealth').then((module) => ({ default: module.SystemHealth })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const AIModelCenter = lazy(() => import('./pages/AIModelCenter'));
+const VideoAnalyzer = lazy(() => import('./pages/VideoAnalyzer'));
+const SurveillanceHeatmap = lazy(() => import('./pages/SurveillanceHeatmap'));
+
+const AuthGuard = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated } = useAuthStore();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
@@ -40,11 +42,13 @@ function App() {
   }, [checkAuth]);
 
   return (
-    <BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+      <Suspense fallback={<div className="flex h-screen items-center justify-center bg-slate-950 text-slate-300" role="status">Loading view…</div>}>
       <Routes>
         <Route path="/" element={<Navigate to="/command-center" replace />} />
         <Route path="/login" element={<LoginPage />} />
-        
+
         <Route element={<AuthGuard><DashboardLayout /></AuthGuard>}>
           <Route path="/command-center" element={<CommandCenter />} />
           <Route path="/surveillance" element={<LiveSurveillance />} />
@@ -67,8 +71,8 @@ function App() {
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/system-health" element={<SystemHealth />} />
           <Route path="/security" element={<SecurityCenter />} />
-          <Route path="/api-keys" element={<SecurityCenter initialTab="api-keys" />} />
-          <Route path="/api-key" element={<SecurityCenter initialTab="api-keys" />} />
+          <Route path="/api-keys" element={<Navigate to="/security" replace />} />
+          <Route path="/api-key" element={<Navigate to="/security" replace />} />
           <Route path="/integrations" element={<SecurityCenter initialTab="integrations" />} />
           <Route path="/audit-log" element={<AuditLog />} />
           <Route path="/audit" element={<AuditLog />} />
@@ -79,7 +83,9 @@ function App() {
 
         <Route path="*" element={<Navigate to="/command-center" replace />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 
