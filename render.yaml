@@ -5,7 +5,8 @@ services:
     dockerfilePath: Dockerfile.prod
     plan: free
     healthCheckPath: /
-    autoDeploy: true
+    # Deploy only after GitHub Actions checks pass.
+    autoDeployTrigger: checksPass
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"
