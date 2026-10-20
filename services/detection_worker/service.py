@@ -6,8 +6,6 @@ import cv2
 import numpy as np
 from typing import Optional, Dict, Any, List
 from datetime import datetime
-from ultralytics import YOLO
-
 from shared.config.settings import settings
 from shared.messaging.streams import StreamManager, StreamConfig
 from shared.schemas.detection import Detection, DetectionBatch, BoundingBox
@@ -20,7 +18,7 @@ class DetectionWorker:
     def __init__(self, stream_manager: StreamManager, worker_id: str = "detector-1"):
         self.stream_manager = stream_manager
         self.worker_id = worker_id
-        self.model: Optional[YOLO] = None
+        self.model: Optional[Any] = None
         self._running = False
         self._tasks: List[asyncio.Task] = []
         self.fps_counter = FPSCounter()
@@ -53,6 +51,10 @@ class DetectionWorker:
 
     async def _load_model(self):
         try:
+            # Keep the API and test modules importable without the optional
+            # model runtime. The detector only needs Ultralytics when started.
+            from ultralytics import YOLO
+
             self.model = YOLO(settings.detection_model)
             self.model.to(settings.detection_device)
             if settings.detection_half:
