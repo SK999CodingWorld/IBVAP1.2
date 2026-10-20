@@ -5,8 +5,6 @@ import cv2
 import numpy as np
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from ultralytics import YOLO
-
 try:
     import easyocr
     EASYOCR_AVAILABLE = True
@@ -33,7 +31,7 @@ class ANPRWorker:
     def __init__(self, stream_manager: StreamManager, worker_id: str = "anpr-1"):
         self.stream_manager = stream_manager
         self.worker_id = worker_id
-        self.plate_model: Optional[YOLO] = None
+        self.plate_model: Optional[Any] = None
         self.ocr_reader = None
         self._running = False
         self._tasks: List[asyncio.Task] = []
@@ -66,6 +64,8 @@ class ANPRWorker:
 
     async def _load_models(self):
         try:
+            from ultralytics import YOLO
+
             self.plate_model = YOLO("license_plate_detector.pt")
             self.plate_model.to(settings.detection_device)
             logger.info("Loaded license plate detection model")
