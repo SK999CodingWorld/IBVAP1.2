@@ -1,16 +1,22 @@
-# Production deployment preparation
+# Deploy IBVAP with Vercel, Render, and Supabase
 
-## Hosting boundary
+This repository is arranged as a small monorepo with three deployment targets:
 
-Supabase hosts the managed PostgreSQL database used by this application. The existing backend is a Python/FastAPI service with SQLAlchemy, WebSockets, streaming endpoints, and optional camera/AI workers. Supabase Edge Functions run TypeScript/Deno and are not a drop-in host for this runtime. Deploy the API container to a long-running container service and point Vercel at its HTTPS API URL. Do not put the Supabase database password or service role key in Vercel/browser variables.
+- `frontend/` is the Vite single-page app deployed to Vercel.
+- `backend/` is the FastAPI application packaged by the root `Dockerfile.prod` and deployed as a Render Web Service.
+- Supabase provides PostgreSQL. Its database password and connection string stay on the server side.
 
-The Vite frontend is configured for Vercel in `frontend/vercel.json`. Deep links are rewritten to `index.html`; browser requests to the backend use `VITE_API_BASE_URL`.
+The Vercel SPA rewrite lives in `frontend/vercel.json`. Render's service definition is the root `render.yaml`; it checks `/health`, runs with production-safe flags, and generates signing secrets. The database URL and allowed frontend origins are set privately in Render.
 
-## 1. Create the Supabase database
+## 1. Push the deployment branch to GitHub
 
-1. Create a Supabase project and save its database password securely.
-2. From **Connect**, copy the **Transaction pooler** connection string for the API service. It uses port `6543`; the SQLAlchemy client disables asyncpg's prepared statement cache for this pooler.
-3. Apply the initial schema with the Supabase CLI from the repository root:
+Push or merge the desired deployment commit to the Git branch that Vercel and Render should watch. For a normal production setup, make `main` the production branch in both dashboards. Commits to other branches can be used for previews.
+
+## 2. Create or confirm the Supabase database
+
+1. Open the Supabase project and choose **Connect**.
+2. Copy the PostgreSQL **Transaction pooler** connection string for a server-side application (the shared pooler normally uses port `6543`). The backend normalizes the standard `postgresql://` URL for SQLAlchemy and disables asyncpg's statement cache for this pooler. Do not put this string in Vercel or in any `VITE_*` variable.
+3. From the repository root, apply the checked-in migration from a trusted local terminal:
 
    ```sh
    supabase login
@@ -18,62 +24,55 @@ The Vite frontend is configured for Vercel in `frontend/vercel.json`. Deep links
    supabase db push
    ```
 
-   The initial migration creates the SQLAlchemy tables and enables Row Level Security without policies. This intentionally denies direct `anon` and `authenticated` Data API access; the app uses its FastAPI API and a server-side database connection. Keep application data access behind that API.
-4. Save the transaction pooler URL as `DATABASE_URL` in the API host and set `DB_SSL=true`.
+   Review the pending migration shown by the CLI before confirming the production change.
+4. Keep the database password private. If it has been shared in chat or committed anywhere, rotate it before using this deployment.
 
-The production API does not run `metadata.create_all()` at startup. Apply migrations before deploying a new API version. Review future SQL migrations before applying them to production.
+## 3. Deploy the API on Render
 
-## 2. Deploy the FastAPI API container
+The root `render.yaml` is configured for a Docker Web Service using `Dockerfile.prod`.
 
-Build from the repository root with `Dockerfile.prod` and deploy it to a container host that supports long-lived HTTP/WebSocket connections. Configure these environment variables in that host's secret/settings UI:
+1. If you already have the `ibvap-api` service, open it and confirm its repository is `SK999CodingWorld/IBVAP1.2` and its deploy branch is the branch you intend to use. The root `render.yaml` is intended to manage this service. Avoid creating another service with the same API just to apply the file.
+2. If you do not have an API service yet, choose **New → Blueprint**, connect `SK999CodingWorld/IBVAP1.2`, select the deploy branch, and apply the repository-root `render.yaml`.
+3. For `DATABASE_URL`, paste the Supabase transaction-pooler connection string. If the dashboard is creating a new Blueprint, provide this when prompted; for an already-created service, set it in **Environment**.
+4. For `CORS_ORIGINS`, enter a JSON array containing the exact Vercel origin, for example `["https://your-project.vercel.app"]`. Do not include a trailing slash or use `*`. Add any custom production hostname as another array entry.
+5. The Blueprint generates `SECRET_KEY` and `WEBHOOK_SECRET` for a new service. For an existing service, replace any missing/default values with two independent random values of at least 32 characters. You can generate one at a time with `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Store them only in Render's Environment settings; never commit or put them in Vercel.
+6. Confirm these production values in Render: `ENVIRONMENT=production`, `DEMO_MODE=false`, `DB_SSL=true`, and `ENABLE_BACKGROUND_WORKERS=false`. Keep camera/AI workers off this web instance.
+7. Save the environment changes and deploy. Wait for Render's health check to pass at `/health`.
+8. Copy the public Render URL, such as `https://ibvap-api.onrender.com`. Verify `https://YOUR-RENDER-HOST/health` returns HTTP 200 before continuing.
 
-| Name | Production value |
-| --- | --- |
-| `ENVIRONMENT` | `production` |
-| `DATABASE_URL` | Supabase transaction pooler URL (secret) |
-| `DB_SSL` | `true` |
-| `SECRET_KEY` | Unique random secret, at least 32 characters |
-| `WEBHOOK_SECRET` | Separate unique random secret, at least 32 characters |
-| `DEMO_MODE` | `false` |
-| `ENABLE_BACKGROUND_WORKERS` | `false` on the web API instance |
-| `CORS_ORIGINS` | JSON array of exact Vercel HTTPS origins, e.g. `["https://your-app.vercel.app"]` |
-| `ENABLE_KEY_HEALTH_CHECK` | `false` unless restricted diagnostics are explicitly needed |
-| `REDIS_URL` | Shared Redis URL if using distributed caching/rate limiting |
+Render Free services sleep after 15 minutes without inbound traffic and may take about a minute to wake. Their filesystem is ephemeral, so the app must use Supabase for durable database data and should not store uploads on the local container filesystem. Free instances are suitable for demos and evaluation, not a latency-sensitive production service.
 
-Production startup fails if demo mode, wildcard/non-HTTPS CORS, insecure database transport, default secrets, or in-process workers are enabled. Camera ingestion and AI processing should run as separate worker services with their own network and compute access. The bundled model/streaming worker must not be assumed to run on Vercel or Supabase Edge Functions.
+## 4. Deploy the frontend on Vercel
 
-Use `/health` as a liveness check and `/api/v1/health` as the database readiness check. Configure the API host to allow the Vercel origin in `CORS_ORIGINS` before switching traffic.
+1. In Vercel, choose **Add New → Project**, import `SK999CodingWorld/IBVAP1.2`, and select the same production branch.
+2. Set **Root Directory** to `frontend`. Use the **Vite** preset.
+3. Use these build settings (Vercel normally detects them):
+   - Install command: `npm ci`
+   - Build command: `npm run build`
+   - Output directory: `dist`
+4. Add the following environment variables to **Production** and **Preview** as needed:
 
-## 3. Connect GitHub to Vercel
+   | Name | Value |
+   | --- | --- |
+   | `VITE_API_BASE_URL` | `https://YOUR-RENDER-HOST/api/v1` |
+   | `VITE_API_TIMEOUT_MS` | `20000` |
+   | `VITE_DEMO_MODE` | `false` |
 
-1. Push the reviewed repository to GitHub.
-2. Import it into Vercel and set **Root Directory** to `frontend`.
-3. Use `npm ci` for install, `npm run build` for build, and `dist` as output.
-4. Set these Vercel environment variables for Preview and Production:
+   `VITE_*` values are included in the browser build. Only put public settings here; never put database URLs, database passwords, signing secrets, or Supabase service-role keys in Vercel frontend variables.
 
-   ```text
-   VITE_API_BASE_URL=https://YOUR_API_HOST/api/v1
-   VITE_API_TIMEOUT_MS=20000
-   VITE_DEMO_MODE=false
-   ```
+5. Deploy. Copy the final Vercel Production Domain and add its exact `https://...` origin to Render's `CORS_ORIGINS` JSON array. Save and redeploy the API if you changed its environment.
+6. If you change Vercel environment variables, trigger a new deployment; existing deployments do not receive updated build-time values.
 
-   `VITE_*` variables are public and compiled into the browser bundle. Never put database URLs, JWT signing secrets, Supabase service-role keys, or webhook secrets in them.
-5. Add the Vercel production domain and any intended preview domains to the API's `CORS_ORIGINS`. Use exact HTTPS origins; don't use `*`.
-6. Confirm both the Vercel production URL and direct API URL, including `/api/v1/health`, before enabling automatic production deploys.
+## 5. Verify the deployed app
 
-Vercel's GitHub integration handles frontend preview and production builds. `.github/workflows/ci-cd.yml` validates backend tests and the Vercel frontend build; it does not publish secrets or trigger a separate provider deployment.
+1. Open `https://YOUR-RENDER-HOST/health` and confirm it returns HTTP 200.
+2. Open `https://YOUR-RENDER-HOST/api/v1/health` and confirm the API/database readiness response is healthy.
+3. Open the Vercel Production URL and confirm a nested route such as `/login` loads directly and after refresh.
+4. Sign in and exercise API-backed screens. Check browser Network/Console and Render logs for CORS errors, failed requests, or startup errors.
+5. If the frontend loads but API calls fail, confirm the Vercel `VITE_API_BASE_URL` has `/api/v1`, and Render `CORS_ORIGINS` exactly matches the browser's origin.
 
-## 4. Verify before release
+The live media endpoints can carry a session token in a query parameter because browser media elements cannot attach bearer headers. Ensure any proxy/access-log configuration redacts `token` query values; never paste full tokenized media URLs into support messages.
 
-- Apply the Supabase migration to a clean staging project and verify all 14 expected tables exist.
-- Run `python -m pytest backend/tests tests -v` with a disposable test database.
-- Run `npm ci && npm run build` from `frontend/`.
-- Test authentication, expired/invalid tokens, role-protected endpoints, camera/stream access, incident actions, evidence operations, API validation errors, and WebSocket reconnects against staging.
-- Confirm request logs carry request IDs and never contain passwords, token values, database URLs, or uploaded evidence contents.
-- Redact the `token` query parameter in API host, proxy, and observability logs. Native browser media elements cannot attach bearer headers, so the live MJPEG/snapshot URLs use the session token as a query parameter; keep access logs disabled or redact that parameter at every layer.
-- Confirm demo seeding, demo login bypasses, and generated telemetry are disabled in production.
-- Rotate all example/development credentials before connecting real data.
+## Local frontend environment
 
-## Local development
-
-Copy `.env.example` to `.env`, install Python dependencies, and run `python run.py`. For the UI, copy `frontend/.env.example` to `frontend/.env.local`, run `npm ci`, then `npm run dev`. Vite proxies API and WebSocket traffic to `VITE_DEV_API_TARGET` (default `http://127.0.0.1:8001`).
+Copy `frontend/.env.example` to `frontend/.env.local` for local Vite development. It uses the `/api` proxy to reach `http://127.0.0.1:8001`. Keep local secrets in ignored `.env` files; commit only the example templates.
