@@ -1,7 +1,8 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+from pydantic import field_validator, model_validator
 from pathlib import Path
-from typing import List
+from typing import Annotated, Any, List
+import json
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -28,7 +29,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
 
     # CORS & Limits
-    CORS_ORIGINS: List[str] = ["*"]
+    CORS_ORIGINS: Annotated[List[str], NoDecode] = ["*"]
     RATE_LIMIT_PER_MINUTE: int = 120
     MAX_REQUEST_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB
 
@@ -42,6 +43,33 @@ class Settings(BaseSettings):
     # Edge & AI
     AI_BACKEND: str = "mock"
     EDGE_NODE_ID: str = "EDGE-001"
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value: Any) -> Any:
+        """Accept JSON arrays or comma-separated origins from deployment envs."""
+        if isinstance(value, (list, tuple)):
+            origins = list(value)
+        elif isinstance(value, str):
+            raw_value = value.strip()
+            if not raw_value:
+                return []
+            try:
+                decoded = json.loads(raw_value)
+            except json.JSONDecodeError as exc:
+                if raw_value.startswith("[") or raw_value.endswith("]"):
+                    raise ValueError(
+                        "CORS_ORIGINS must be a valid JSON array or comma-separated HTTPS origins."
+                    ) from exc
+                origins = raw_value.split(",")
+            else:
+                origins = decoded if isinstance(decoded, list) else [decoded]
+        else:
+            return value
+
+        if not all(isinstance(origin, str) for origin in origins):
+            raise ValueError("CORS_ORIGINS entries must all be strings.")
+        return [origin.strip().rstrip("/") for origin in origins if origin.strip()]
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
