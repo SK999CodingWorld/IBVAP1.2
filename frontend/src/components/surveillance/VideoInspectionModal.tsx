@@ -1,4 +1,5 @@
 import { getAuthenticatedMediaUrl } from '@/api/client';
+import { MjpegFeed } from '@/components/surveillance/MjpegFeed';
 import { Button } from '@/components/ui/Button';
 import { useVideoStore } from '@/stores/videoStore';
 import {
@@ -183,13 +184,10 @@ export const VideoInspectionModal: React.FC = () => {
               config?.sourceUrl?.endsWith('.mjpg') ||
               config?.sourceUrl?.endsWith('.mjpeg')
             ) ? (
-              <img
-                src={getAuthenticatedMediaUrl(config.sourceUrl)}
-                alt={inspectingCameraId}
-                className="w-full h-full object-contain select-none"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/command-center-feed.jpg';
-                }}
+              <MjpegFeed
+                sourceUrl={config.sourceUrl}
+                alt={`${inspectingCameraId} live MJPEG feed`}
+                objectFit="contain"
               />
             ) : config.sourceUrl ? (
               <video

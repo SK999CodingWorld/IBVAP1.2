@@ -1,5 +1,6 @@
 import { dashboardService,streamService } from '@/api';
-import { getAuthenticatedMediaUrl, getAuthenticatedWebSocket } from '@/api/client';
+import { getAuthenticatedWebSocket } from '@/api/client';
+import { MjpegFeed } from '@/components/surveillance/MjpegFeed';
 import { ObjectInspectorModal } from '@/components/surveillance/ObjectInspectorModal';
 import { VideoInspectionModal } from '@/components/surveillance/VideoInspectionModal';
 import { VideoSourceModal } from '@/components/surveillance/VideoSourceModal';
@@ -457,18 +458,18 @@ export const CommandCenter: React.FC = () => {
               onClick={() => openInspection(activeCameraId)}
               title="Click for Fullscreen Camera Inspection"
             >
-              <img
-                src={
-                  streamMode === 'mjpeg' ? getAuthenticatedMediaUrl('/video_feed') :
-                  streamMode === 'heatmap' ? getAuthenticatedMediaUrl('/api/v1/stream/heatmap') :
-                  '/command-center-feed.jpg'
-                }
-                alt="IBVAP Live Tactical Video Stream"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/command-center-feed.jpg';
-                }}
-              />
+              {streamMode === 'tactical' ? (
+                <img
+                  src="/command-center-feed.jpg"
+                  alt="IBVAP tactical feed preview"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <MjpegFeed
+                  sourceUrl={streamMode === 'mjpeg' ? '/video_feed' : '/api/v1/stream/heatmap'}
+                  alt={streamMode === 'mjpeg' ? 'Live MJPEG camera feed' : 'Live MJPEG heatmap feed'}
+                />
+              )}
 
               {/* Image displays as it is with its native pre-rendered AI detections */}
             </div>

@@ -26,13 +26,27 @@ function parseTimeout(value: string | undefined): number {
 
 const legacyApiUrl = import.meta.env.VITE_API_URL;
 const configuredApiUrl = import.meta.env.VITE_API_BASE_URL;
+// Vercel serves the UI while the FastAPI service runs on Render. Keeping this
+// production fallback absolute ensures API, MJPEG, and WebSocket requests reach
+// the backend even when the Vercel build variable has not been added yet.
+const defaultApiUrl = import.meta.env.DEV
+  ? '/api/v1'
+  : 'https://ibvap-api-7ru2.onrender.com/api/v1';
+const providedApiUrl = configuredApiUrl || legacyApiUrl;
+const selectedApiUrl = import.meta.env.PROD && providedApiUrl?.startsWith('/')
+  ? defaultApiUrl
+  : providedApiUrl || defaultApiUrl;
+
+if (import.meta.env.PROD && providedApiUrl?.startsWith('/')) {
+  console.warn('A relative VITE_API_BASE_URL cannot reach the separate production API; using the Render API URL.');
+}
 
 if (import.meta.env.DEV && legacyApiUrl && configuredApiUrl && legacyApiUrl !== configuredApiUrl) {
   console.warn('Both VITE_API_URL and VITE_API_BASE_URL are configured; VITE_API_BASE_URL takes precedence.');
 }
 
 export const appConfig = Object.freeze({
-  apiBaseUrl: normalizeApiBaseUrl(configuredApiUrl || legacyApiUrl),
+  apiBaseUrl: normalizeApiBaseUrl(selectedApiUrl),
   apiTimeoutMs: parseTimeout(import.meta.env.VITE_API_TIMEOUT_MS),
   demoMode: import.meta.env.VITE_DEMO_MODE === 'true',
   isDevelopment: import.meta.env.DEV,

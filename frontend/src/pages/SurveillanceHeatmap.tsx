@@ -1,5 +1,5 @@
 import { analyticsService } from '@/api';
-import { getAuthenticatedMediaUrl } from '@/api/client';
+import { MjpegFeed } from '@/components/surveillance/MjpegFeed';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
@@ -736,18 +736,19 @@ export const SurveillanceHeatmap: React.FC = () => {
 
             {/* Video Snapshot / Live Stream with HUD Overlay */}
             <div className="relative rounded-lg overflow-hidden border border-[#1E293B] aspect-video bg-black shadow-lg">
-              <img
-                src={
-                  previewMode === 'mjpeg' ? getAuthenticatedMediaUrl('/video_feed') :
-                  previewMode === 'heatmap' ? getAuthenticatedMediaUrl('/api/v1/stream/heatmap') :
-                  selectedSector.cameraFeed
-                }
-                alt={selectedSector.name}
-                className={`w-full h-full object-cover transition-all duration-300 ${isFlirMode ? 'hue-rotate-180 invert contrast-125' : ''}`}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/bg-traffic.jpg';
-                }}
-              />
+              {previewMode === 'snapshot' ? (
+                <img
+                  src={selectedSector.cameraFeed}
+                  alt={`${selectedSector.name} snapshot`}
+                  className={`w-full h-full object-cover transition-all duration-300 ${isFlirMode ? 'hue-rotate-180 invert contrast-125' : ''}`}
+                />
+              ) : (
+                <MjpegFeed
+                  sourceUrl={previewMode === 'mjpeg' ? '/video_feed' : '/api/v1/stream/heatmap'}
+                  alt={`${selectedSector.name} ${previewMode} stream`}
+                  className={`w-full h-full transition-all duration-300 ${isFlirMode ? 'hue-rotate-180 invert contrast-125' : ''}`}
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
 
               {/* HUD Status Pill */}

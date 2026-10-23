@@ -1,4 +1,5 @@
 import { getAuthenticatedMediaUrl } from '@/api/client';
+import { MjpegFeed } from '@/components/surveillance/MjpegFeed';
 import { useVideoStore } from '@/stores/videoStore';
 import {
   AlertCircle,
@@ -236,14 +237,7 @@ export const CameraCard: React.FC<CameraCardProps> = ({
             </div>
           )
         ) : config?.sourceUrl && isMjpegStream ? (
-          <img
-            src={getAuthenticatedMediaUrl(config.sourceUrl)}
-            alt={camera.name}
-            className="w-full h-full object-cover select-none"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = FEED_IMAGES[camera.id] || '/camera-perimeter.jpg';
-            }}
-          />
+          <MjpegFeed sourceUrl={config.sourceUrl} alt={`${camera.name} live MJPEG feed`} />
         ) : config?.sourceUrl ? (
           <video
             ref={videoRef}
