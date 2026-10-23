@@ -25,13 +25,27 @@ async function computeSha256(str: string): Promise<string> {
 }
 
 export const VideoInspectionModal: React.FC = () => {
-  const { inspectingCameraId, closeInspection, cameraConfigs, togglePlay, toggleMute, toggleAiOverlays, toggleZoneOverlays, setPlaybackRate, addEvidence } = useVideoStore();
+  const { inspectingCameraId, closeInspection, cameraConfigs, webcamStreams, togglePlay, toggleMute, toggleAiOverlays, toggleZoneOverlays, setPlaybackRate, addEvidence } = useVideoStore();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [snapshotToast, setSnapshotToast] = useState<{ id: string; hash: string } | null>(null);
   const [alertFired, setAlertFired] = useState(false);
   const [targetBoxes, setTargetBoxes] = useState<any[]>([]);
 
   const config = inspectingCameraId ? cameraConfigs[inspectingCameraId] : null;
+  const webcamStream = inspectingCameraId ? webcamStreams[inspectingCameraId] : undefined;
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || config?.sourceType !== 'webcam' || !webcamStream) return;
+
+    video.srcObject = webcamStream;
+    if (config.isPlaying) void video.play().catch(() => undefined);
+    else video.pause();
+
+    return () => {
+      if (video.srcObject === webcamStream) video.srcObject = null;
+    };
+  }, [config?.isPlaying, config?.sourceType, webcamStream]);
 
   // Initialize targets
   useEffect(() => {
@@ -147,8 +161,23 @@ export const VideoInspectionModal: React.FC = () => {
 
           {/* Left / Center: Video Stream with Overlays */}
           <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden group">
-            {config.sourceUrl && (
-              config?.sourceType === 'webcam' ||
+            {config.sourceType === 'webcam' ? (
+              webcamStream ? (
+                <video
+                  ref={videoRef}
+                  autoPlay={config.isPlaying}
+                  muted
+                  playsInline
+                  className="w-full h-full object-contain"
+                  aria-label={`${inspectingCameraId} local webcam feed`}
+                />
+              ) : (
+                <div className="text-amber-300 font-mono text-sm flex flex-col items-center gap-2">
+                  <Camera className="w-10 h-10" />
+                  WEBCAM DISCONNECTED — reconnect it from Change Feed
+                </div>
+              )
+            ) : config.sourceUrl && (
               config?.sourceUrl?.includes('/video_feed') ||
               config?.sourceUrl?.includes('/stream') ||
               config?.sourceUrl?.endsWith('.mjpg') ||

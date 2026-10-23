@@ -332,6 +332,8 @@ const DEFAULT_OVERLAYS: OverlaySettings = {
 
 interface VideoStoreState {
   cameraConfigs: Record<string, CameraVideoConfig>;
+  /** Local device streams stay in memory and are never serialized or sent to the API. */
+  webcamStreams: Record<string, MediaStream>;
   evidenceList: EvidenceItem[];
   inspectingCameraId: string | null;
   inspectedObject: BoundingBox | null;
@@ -340,7 +342,9 @@ interface VideoStoreState {
   globalOverlays: OverlaySettings;
   
   // Actions
-  setVideoSource: (cameraId: string, sourceType: 'preset' | 'file' | 'webcam' | 'url', sourceUrl: string, fileName?: string) => void;
+  setVideoSource: (cameraId: string, sourceType: 'preset' | 'file' | 'url', sourceUrl: string, fileName?: string) => void;
+  setWebcamSource: (cameraId: string, stream: MediaStream) => void;
+  stopAllWebcams: () => void;
   togglePlay: (cameraId: string) => void;
   toggleMute: (cameraId: string) => void;
   toggleAiOverlays: (cameraId: string) => void;
@@ -479,8 +483,9 @@ const DEFAULT_CONFIGS: Record<string, CameraVideoConfig> = {
   }
 };
 
-export const useVideoStore = create<VideoStoreState>((set) => ({
+export const useVideoStore = create<VideoStoreState>((set, get) => ({
   cameraConfigs: DEFAULT_CONFIGS,
+  webcamStreams: {},
   evidenceList: [
     { id: 'EVD-001', type: 'Video Clip', camera: 'BOP-01', incident: 'INC-001', time: '2026-08-25 10:15:22', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', status: 'VERIFIED' },
     { id: 'EVD-002', type: 'Snapshot', camera: 'CHECK-01', incident: 'INC-001', time: '2026-08-25 10:16:05', hash: '8a2b5342a8fc1c149afbf4c8996fb92491a3e5c7d8b2f4a6c8e0d2b4f6a8c0e2', status: 'VERIFIED' }
@@ -491,7 +496,11 @@ export const useVideoStore = create<VideoStoreState>((set) => ({
   selectedCameraForModal: 'BOP-01',
   globalOverlays: { ...DEFAULT_OVERLAYS },
 
-  setVideoSource: (cameraId, sourceType, sourceUrl, fileName) => set((state) => {
+  setVideoSource: (cameraId, sourceType, sourceUrl, fileName) => {
+    const previousStream = get().webcamStreams[cameraId];
+    previousStream?.getTracks().forEach((track) => track.stop());
+
+    set((state) => {
     const prev = state.cameraConfigs[cameraId] || {
       cameraId,
       sourceType: 'preset',
@@ -506,6 +515,7 @@ export const useVideoStore = create<VideoStoreState>((set) => ({
     };
 
     return {
+      webcamStreams: Object.fromEntries(Object.entries(state.webcamStreams).filter(([id]) => id !== cameraId)),
       cameraConfigs: {
         ...state.cameraConfigs,
         [cameraId]: {
@@ -514,11 +524,61 @@ export const useVideoStore = create<VideoStoreState>((set) => ({
           sourceUrl,
           fileName,
           isPlaying: true,
-          isWebcam: sourceType === 'webcam'
+          isWebcam: false
         }
       }
     };
-  }),
+    });
+  },
+
+  setWebcamSource: (cameraId, stream) => {
+    const previousStream = get().webcamStreams[cameraId];
+    if (previousStream && previousStream !== stream) {
+      previousStream.getTracks().forEach((track) => track.stop());
+    }
+
+    set((state) => {
+    const prev = state.cameraConfigs[cameraId] || {
+      cameraId,
+      sourceType: 'preset' as const,
+      sourceUrl: '',
+      isPlaying: true,
+      isMuted: true,
+      playbackRate: 1.0,
+      showAiOverlays: true,
+      showZoneOverlays: true,
+      overlays: { ...DEFAULT_OVERLAYS },
+      detections: []
+    };
+
+    return {
+      webcamStreams: { ...state.webcamStreams, [cameraId]: stream },
+      cameraConfigs: {
+        ...state.cameraConfigs,
+        [cameraId]: {
+          ...prev,
+          sourceType: 'webcam',
+          sourceUrl: '',
+          fileName: 'Live Device Webcam',
+          isPlaying: true,
+          isWebcam: true
+        }
+      }
+    };
+    });
+  },
+
+  stopAllWebcams: () => {
+    const streams = get().webcamStreams;
+    Object.values(streams).forEach((stream) => stream.getTracks().forEach((track) => track.stop()));
+    set((state) => ({
+      webcamStreams: {},
+      cameraConfigs: Object.fromEntries(Object.entries(state.cameraConfigs).map(([cameraId, config]) => [
+        cameraId,
+        config.sourceType === 'webcam' ? { ...config, isPlaying: false } : config
+      ]))
+    }));
+  },
 
   togglePlay: (cameraId) => set((state) => {
     const config = state.cameraConfigs[cameraId];

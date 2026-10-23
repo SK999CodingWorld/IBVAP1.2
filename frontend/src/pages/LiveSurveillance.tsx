@@ -30,12 +30,14 @@ export const LiveSurveillance: React.FC = () => {
   const [globalAi, setGlobalAi] = useState(true);
   const [globalZones, setGlobalZones] = useState(true);
 
-  const { openVideoModal, openInspection, toggleAiOverlays, toggleZoneOverlays, cameraConfigs } = useVideoStore();
+  const { openVideoModal, openInspection, toggleAiOverlays, toggleZoneOverlays, cameraConfigs, stopAllWebcams } = useVideoStore();
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date().toISOString()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => () => stopAllWebcams(), [stopAllWebcams]);
 
   const getGridClass = () => {
     switch(gridSize) {

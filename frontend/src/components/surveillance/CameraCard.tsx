@@ -74,6 +74,20 @@ export const CameraCard: React.FC<CameraCardProps> = ({
   const [activeBoxes, setActiveBoxes] = useState<any[]>([]);
 
   const config = cameraConfigs[camera.id];
+  const webcamStream = useVideoStore((state) => state.webcamStreams[camera.id]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || config?.sourceType !== 'webcam' || !webcamStream) return;
+
+    video.srcObject = webcamStream;
+    if (config.isPlaying) void video.play().catch(() => undefined);
+    else video.pause();
+
+    return () => {
+      if (video.srcObject === webcamStream) video.srcObject = null;
+    };
+  }, [config?.isPlaying, config?.sourceType, webcamStream]);
 
   useEffect(() => {
     if (config?.detections) {
@@ -158,7 +172,6 @@ export const CameraCard: React.FC<CameraCardProps> = ({
   };
 
   const isMjpegStream =
-    config?.sourceType === 'webcam' ||
     Boolean(config?.sourceUrl?.includes('/video_feed')) ||
     Boolean(config?.sourceUrl?.includes('/stream')) ||
     Boolean(config?.sourceUrl?.endsWith('.mjpg')) ||
@@ -205,6 +218,23 @@ export const CameraCard: React.FC<CameraCardProps> = ({
             <span className="text-red-400 font-bold uppercase tracking-wider">CAMERA OFFLINE</span>
             <span className="text-[10px] text-slate-500">STANDBY RECOVERY MODE</span>
           </div>
+        ) : config?.sourceType === 'webcam' ? (
+          webcamStream ? (
+            <video
+              ref={videoRef}
+              autoPlay={config.isPlaying}
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+              aria-label={`${camera.name} local webcam feed`}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-[#070B12] text-amber-300 font-mono text-xs space-y-2">
+              <Camera size={22} />
+              <span>WEBCAM DISCONNECTED</span>
+              <span className="text-[10px] text-slate-500">Reconnect from Change Feed</span>
+            </div>
+          )
         ) : config?.sourceUrl && isMjpegStream ? (
           <img
             src={getAuthenticatedMediaUrl(config.sourceUrl)}

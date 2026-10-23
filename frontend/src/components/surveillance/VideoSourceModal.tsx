@@ -15,7 +15,7 @@ const CAMERAS = [
 ];
 
 export const VideoSourceModal: React.FC = () => {
-  const { videoModalOpen, selectedCameraForModal, closeVideoModal, setVideoSource, cameraConfigs } = useVideoStore();
+  const { videoModalOpen, selectedCameraForModal, closeVideoModal, setVideoSource, setWebcamSource, cameraConfigs } = useVideoStore();
   const [targetCamera, setTargetCamera] = useState(selectedCameraForModal);
   const [activeTab, setActiveTab] = useState<'presets' | 'upload' | 'webcam' | 'url'>('presets');
 
@@ -32,18 +32,52 @@ export const VideoSourceModal: React.FC = () => {
   const [webcamError, setWebcamError] = useState<string | null>(null);
   const [sourceError, setSourceError] = useState<string | null>(null);
   const webcamVideoRef = useRef<HTMLVideoElement>(null);
+  const webcamStreamRef = useRef<MediaStream | null>(null);
+  const webcamRequestIdRef = useRef(0);
+  const videoModalOpenRef = useRef(videoModalOpen);
+
+  useEffect(() => {
+    webcamStreamRef.current = webcamStream;
+  }, [webcamStream]);
+
+  useEffect(() => {
+    videoModalOpenRef.current = videoModalOpen;
+  }, [videoModalOpen]);
 
   useEffect(() => {
     setTargetCamera(selectedCameraForModal);
   }, [selectedCameraForModal]);
 
-  // Clean up webcam stream when modal closes
+  // Detach and stop a preview stream when the modal closes. Applied streams
+  // are transferred to the video store before closing and remain live there.
   useEffect(() => {
-    if (!videoModalOpen && webcamStream) {
-      webcamStream.getTracks().forEach(track => track.stop());
+    if (!videoModalOpen && webcamStreamRef.current) {
+      webcamStreamRef.current.getTracks().forEach(track => track.stop());
+      webcamStreamRef.current = null;
       setWebcamStream(null);
     }
-  }, [videoModalOpen, webcamStream]);
+    if (!videoModalOpen) webcamRequestIdRef.current += 1;
+  }, [videoModalOpen]);
+
+  useEffect(() => () => {
+    webcamRequestIdRef.current += 1;
+    videoModalOpenRef.current = false;
+    webcamStreamRef.current?.getTracks().forEach((track) => track.stop());
+  }, []);
+
+  useEffect(() => {
+    const video = webcamVideoRef.current;
+    if (!video || !videoModalOpen || activeTab !== 'webcam' || !webcamStream) return;
+
+    video.srcObject = webcamStream;
+    void video.play().catch(() => {
+      setWebcamError('The browser could not start webcam playback. Check browser camera permissions and try again.');
+    });
+
+    return () => {
+      if (video.srcObject === webcamStream) video.srcObject = null;
+    };
+  }, [activeTab, videoModalOpen, webcamStream]);
 
   if (!videoModalOpen) return null;
 
@@ -72,19 +106,48 @@ export const VideoSourceModal: React.FC = () => {
 
   const handleStartWebcam = async () => {
     setWebcamError(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setWebcamError('Camera access needs a secure HTTPS page (or localhost) and a supported browser.');
+      return;
+    }
+
+    const requestId = ++webcamRequestIdRef.current;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: false });
-      setWebcamStream(stream);
-      if (webcamVideoRef.current) {
-        webcamVideoRef.current.srcObject = stream;
+      const currentStream = webcamStreamRef.current;
+      currentStream?.getTracks().forEach((track) => track.stop());
+      webcamStreamRef.current = null;
+      setWebcamStream(null);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      });
+      if (!videoModalOpenRef.current || requestId !== webcamRequestIdRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
       }
-    } catch (err: any) {
-      setWebcamError('Unable to access camera: ' + (err.message || 'Permission denied'));
+      webcamStreamRef.current = stream;
+      setWebcamStream(stream);
+    } catch (err) {
+      const errorName = err instanceof DOMException ? err.name : '';
+      const message = errorName === 'NotAllowedError' || errorName === 'SecurityError'
+        ? 'Camera permission was blocked. Allow camera access for this site in your browser settings.'
+        : errorName === 'NotFoundError' || errorName === 'OverconstrainedError'
+          ? 'No compatible camera was found on this device.'
+          : errorName === 'NotReadableError'
+            ? 'The camera is busy in another app. Close that app and try again.'
+            : 'Unable to start the camera. Check that a camera is connected and try again.';
+      setWebcamError(message);
     }
   };
 
   const handleApplyWebcam = () => {
-    setVideoSource(targetCamera, 'webcam', '/video_feed', 'Live Physical Webcam');
+    if (!webcamStream) {
+      setWebcamError('Connect a webcam before assigning it to a camera channel.');
+      return;
+    }
+    setWebcamSource(targetCamera, webcamStream);
+    webcamStreamRef.current = null;
+    setWebcamStream(null);
     closeVideoModal();
   };
 
@@ -274,7 +337,7 @@ export const VideoSourceModal: React.FC = () => {
                   <Camera className="w-10 h-10 text-cyan-400 mx-auto" />
                   <h4 className="text-sm font-semibold text-white">Live Device Webcam Feed</h4>
                   <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    Stream your physical camera directly into the surveillance system with instant real-time AI tracking overlays.
+                    Show this device camera in the selected channel. The camera feed stays in this browser and is not uploaded to the server.
                   </p>
                   {webcamError && (
                     <div className="p-2 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded flex items-center justify-center gap-1.5">
@@ -294,7 +357,7 @@ export const VideoSourceModal: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => { webcamStream.getTracks().forEach(t => t.stop()); setWebcamStream(null); }}>
+                    <Button variant="outline" onClick={() => { webcamStream.getTracks().forEach(t => t.stop()); webcamStreamRef.current = null; setWebcamStream(null); }}>
                       Stop Webcam
                     </Button>
                     <Button onClick={handleApplyWebcam} className="bg-cyan-600 hover:bg-cyan-500">
