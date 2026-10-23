@@ -2,19 +2,26 @@ services:
   - type: web
     name: ibvap-api
     env: docker
-    dockerfilePath: Dockerfile.prod
+    dockerfilePath: ./Dockerfile.prod
     plan: free
-    healthCheckPath: /
-    # Deploy only after GitHub Actions checks pass.
-    autoDeployTrigger: checksPass
+    healthCheckPath: /health
+    autoDeploy: true
     envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEMO_MODE
+        value: "false"
+      - key: DB_SSL
+        value: "true"
+      - key: ENABLE_BACKGROUND_WORKERS
+        value: "false"
       - key: PYTHONUNBUFFERED
         value: "1"
-    # Optional: for production with external services
-    # - key: REDIS_HOST
-    #   value: your-redis-host
-    # - key: POSTGRES_HOST
-    #   value: your-postgres-host
-
-  # Optional: Deploy frontend separately on Vercel/Netlify
-  # Or use a static site service on Render
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEBHOOK_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

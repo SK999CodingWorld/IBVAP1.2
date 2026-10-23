@@ -73,6 +73,10 @@ frontend/src/
 See [the architecture guide](docs/ARCHITECTURE.md) for ownership boundaries,
 configuration, API versioning, and extension conventions.
 
+For deployment, follow the [Vercel + Render + Supabase guide](DEPLOY.md). The
+frontend deploys from `frontend/`, while the Render API is configured by the
+root `render.yaml`.
+
 ## Quick Start
 
 ### Prerequisites

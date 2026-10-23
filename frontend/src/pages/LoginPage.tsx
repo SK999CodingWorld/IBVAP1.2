@@ -30,7 +30,7 @@ export const LoginPage = () => {
     <div
       className="min-h-[100svh] w-full bg-[#060A10] flex items-center justify-center p-4 py-6 relative overflow-x-hidden overflow-y-auto font-sans"
       style={{
-        backgroundImage: "url('/bg-operations.jpg')",
+        backgroundImage: "url('/bg-login-composite.png')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
@@ -38,7 +38,7 @@ export const LoginPage = () => {
     >
       {/* Image layer adds a separate dark overlay above the photo. */}
       <img
-        src="/bg-operations.jpg"
+        src="/bg-login-composite.png"
         alt="IBVAP Border Security"
         className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none z-0 select-none"
         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
