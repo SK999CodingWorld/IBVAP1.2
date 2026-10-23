@@ -21,7 +21,6 @@ services:
         generateValue: true
       - key: WEBHOOK_SECRET
         generateValue: true
-      # Add these in the Render dashboard. They are intentionally not stored in Git.
       - key: DATABASE_URL
         sync: false
       - key: CORS_ORIGINS
