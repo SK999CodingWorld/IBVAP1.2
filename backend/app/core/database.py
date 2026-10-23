@@ -68,4 +68,3 @@ async def ping_database() -> bool:
         # details, and this check must never leak a database URL or password.
         logger.error("Database ping failed (%s)", type(exc).__name__)
         return False
-
