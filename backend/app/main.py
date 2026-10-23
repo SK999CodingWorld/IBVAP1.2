@@ -30,6 +30,7 @@ import app.models
 from app.api import dashboard
 from app.api.v1 import router as api_router
 from app.services.seed import seed_db
+from app.services.bootstrap import bootstrap_initial_admin
 from app.ai.realtime_stream import live_stream_processor
 import time
 import random
@@ -85,8 +86,11 @@ async def lifespan(app: FastAPI):
         if settings.ENVIRONMENT.lower() != "production":
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
-        elif not await ping_database():
-            raise RuntimeError("Database health check failed during production startup.")
+        else:
+            if not await ping_database():
+                raise RuntimeError("Database health check failed during production startup.")
+            async with AsyncSessionLocal() as session:
+                await bootstrap_initial_admin(session)
 
         if settings.DEMO_MODE and settings.ENVIRONMENT.lower() != "production":
             async with AsyncSessionLocal() as session:

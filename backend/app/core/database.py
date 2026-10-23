@@ -3,6 +3,9 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import text
 from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_normalized_database_url(raw_url: str) -> str:
     """
@@ -60,6 +63,9 @@ async def ping_database() -> bool:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
         return True
-    except Exception:
+    except Exception as exc:
+        # Log the exception class only: driver messages can include connection
+        # details, and this check must never leak a database URL or password.
+        logger.error("Database ping failed (%s)", type(exc).__name__)
         return False
 

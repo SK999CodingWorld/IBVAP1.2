@@ -39,6 +39,7 @@ The root `render.yaml` is configured for a Docker Web Service using `Dockerfile.
 6. Confirm these production values in Render: `ENVIRONMENT=production`, `DEMO_MODE=false`, `DB_SSL=true`, and `ENABLE_BACKGROUND_WORKERS=false`. Keep camera/AI workers off this web instance.
 7. Save the environment changes and deploy. Wait for Render's health check to pass at `/health`.
 8. Copy the public Render URL, such as `https://ibvap-api.onrender.com`. Verify `https://YOUR-RENDER-HOST/health` returns HTTP 200 before continuing.
+9. For an empty production database, temporarily set `INITIAL_ADMIN_PASSWORD` in Render to a unique passphrase of at least 16 characters. On startup the API creates the first `admin` account only if the `users` table is empty. Remove `INITIAL_ADMIN_PASSWORD` after the first successful deployment; the stored password hash remains in the database.
 
 Render Free services sleep after 15 minutes without inbound traffic and may take about a minute to wake. Their filesystem is ephemeral, so the app must use Supabase for durable database data and should not store uploads on the local container filesystem. Free instances are suitable for demos and evaluation, not a latency-sensitive production service.
 

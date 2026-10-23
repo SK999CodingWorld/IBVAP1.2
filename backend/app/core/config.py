@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     DEMO_MODE: bool = True
     DEMO_ADMIN_USERNAME: str = "admin"
     DEMO_ADMIN_PASSWORD: str = "admin123"
+    # Set temporarily in production only when bootstrapping the first admin.
+    INITIAL_ADMIN_PASSWORD: str | None = None
     ENABLE_KEY_HEALTH_CHECK: bool = False
     ENABLE_BACKGROUND_WORKERS: bool = True
 
@@ -70,6 +72,15 @@ class Settings(BaseSettings):
         if not all(isinstance(origin, str) for origin in origins):
             raise ValueError("CORS_ORIGINS entries must all be strings.")
         return [origin.strip().rstrip("/") for origin in origins if origin.strip()]
+
+    @field_validator("INITIAL_ADMIN_PASSWORD")
+    @classmethod
+    def validate_initial_admin_password(cls, value: str | None) -> str | None:
+        if value is not None and value and len(value) < 16:
+            raise ValueError("INITIAL_ADMIN_PASSWORD must be at least 16 characters.")
+        if value is not None and len(value.encode("utf-8")) > 72:
+            raise ValueError("INITIAL_ADMIN_PASSWORD must be no more than 72 UTF-8 bytes.")
+        return value or None
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
